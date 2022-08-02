@@ -26,6 +26,12 @@ module "vpc-main" {
       cidr        = "10.0.2.0/24"
       nat_gateway = true
     }
+
+    priv-3 = {
+      az          = "${local.region}c"
+      cidr        = "10.0.3.0/24"
+      nat_gateway = true
+    }
   }
 
   public_subnets = {
