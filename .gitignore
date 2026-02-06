@@ -35,3 +35,7 @@ terraform.rc
 
 #Custom
 tf_console.tf
+
+# Ignore all Markdown files except README.md
+*.md
+!**/README.md
