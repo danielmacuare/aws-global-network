@@ -10,3 +10,15 @@ resource "aws_vpc" "this" {
     }
   )
 }
+
+resource "aws_egress_only_internet_gateway" "this" {
+  vpc_id = aws_vpc.this.id
+
+
+  tags = merge(
+    var.default_tags,
+    {
+      Name = format("egipv6-igw-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
+    }
+  )
+}
