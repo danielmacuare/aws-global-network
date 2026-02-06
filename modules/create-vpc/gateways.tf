@@ -11,7 +11,7 @@ resource "aws_internet_gateway" "this" {
 
 resource "aws_eip" "nat_gateways" {
   count = length(var.private_subnets)
-  vpc   = true
+  domain = "vpc"
 
   tags = merge(
     var.default_tags,
