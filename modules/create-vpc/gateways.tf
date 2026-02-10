@@ -4,33 +4,35 @@ resource "aws_internet_gateway" "this" {
   tags = merge(
     var.default_tags,
     {
-      Name = format("igw-%s-%s", var.aws_region_short, var.environment)
+      Name = format("igw-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
     }
   )
 }
 
-resource "aws_eip" "nat_gateways" {
-  for_each = var.private_subnets
-  domain   = "vpc"
+# Regional NAT Gateway with auto mode for high availability
+# Auto mode automatically manages IPs across AZs - no EIP needed
+resource "awscc_ec2_nat_gateway" "this" {
+  vpc_id            = aws_vpc.this.id
+  connectivity_type = "public"
+  availability_mode = "regional"
 
-  tags = merge(
-    var.default_tags,
-    {
-      Name = format("eip-%s-ngw-%s-%s", each.key, var.aws_region_short, var.environment)
-    }
+  tags = concat(
+    local.default_tags_awscc,
+    [
+      {
+        key   = "Name"
+        value = format("ngw-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
+      },
+      {
+        key   = "Type"
+        value = "regional-auto"
+      },
+      {
+        key   = "ManagedBy"
+        value = "terraform-awscc"
+      }
+    ]
   )
-}
 
-resource "aws_nat_gateway" "this" {
-  for_each = var.private_subnets
-
-  allocation_id = aws_eip.nat_gateways[each.key].id
-  subnet_id     = aws_subnet.private[each.key].id
-
-  tags = merge(
-    var.default_tags,
-    {
-      Name = format("ngw-%s-%s-%s", each.key, var.aws_region_short, var.environment)
-    }
-  )
+  depends_on = [aws_internet_gateway.this]
 }
