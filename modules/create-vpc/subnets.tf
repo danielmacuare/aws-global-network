@@ -2,9 +2,12 @@
 resource "aws_subnet" "private" {
   for_each = var.private_subnets
 
-  availability_zone = each.value["az"]
-  cidr_block        = each.value["cidr"]
-  vpc_id            = aws_vpc.this.id
+  availability_zone                              = each.value["az"]
+  cidr_block                                     = each.value["cidr"]
+  vpc_id                                         = aws_vpc.this.id
+  assign_ipv6_address_on_creation                = true
+  ipv6_cidr_block                                = var.assign_generated_ipv6_cidr_block ? cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, index(keys(var.private_subnets), each.key)) : null
+  enable_resource_name_dns_aaaa_record_on_launch = true
 
   tags = merge(
     var.default_tags,
@@ -18,9 +21,12 @@ resource "aws_subnet" "private" {
 resource "aws_subnet" "public" {
   for_each = var.public_subnets
 
-  availability_zone = each.value["az"]
-  cidr_block        = each.value["cidr"]
-  vpc_id            = aws_vpc.this.id
+  availability_zone                              = each.value["az"]
+  cidr_block                                     = each.value["cidr"]
+  vpc_id                                         = aws_vpc.this.id
+  assign_ipv6_address_on_creation                = true
+  ipv6_cidr_block                                = var.assign_generated_ipv6_cidr_block ? cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, index(keys(var.public_subnets), each.key) + length(var.private_subnets)) : null
+  enable_resource_name_dns_aaaa_record_on_launch = true
 
   tags = merge(
     var.default_tags,

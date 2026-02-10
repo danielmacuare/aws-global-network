@@ -48,16 +48,3 @@ The project includes a GitHub Actions pipeline that:
 - **create-vpc**: Creates VPC with public/private subnets, route tables, and NAT gateways
 
 See the [Deployment Guide](docs/deployment.md) for detailed module usage examples.
-
-## TO-DO
-
-- Pipelines:
-  - Terraform Format
-  - TF Linting
-  - Docs generation with Terraform Docs
-- Add Transit Gateway module
-- Multi-region deployment automation
-- Enhanced monitoring and logging
-- Tools
-  - AWS Clound Control Provider
-  - Deployment Scripts (via Taskfile)
