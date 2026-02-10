@@ -10,7 +10,7 @@ resource "aws_internet_gateway" "this" {
 }
 
 resource "aws_eip" "nat_gateways" {
-  for_each = var.private_subnets
+  for_each = var.public_subnets
   domain   = "vpc"
 
   tags = merge(
@@ -22,10 +22,10 @@ resource "aws_eip" "nat_gateways" {
 }
 
 resource "aws_nat_gateway" "this" {
-  for_each = var.private_subnets
+  for_each = var.public_subnets
 
   allocation_id = aws_eip.nat_gateways[each.key].id
-  subnet_id     = aws_subnet.private[each.key].id
+  subnet_id     = aws_subnet.public[each.key].id
 
   tags = merge(
     var.default_tags,
@@ -33,4 +33,6 @@ resource "aws_nat_gateway" "this" {
       Name = format("ngw-%s-%s-%s", each.key, var.aws_region_short, var.environment)
     }
   )
+
+  depends_on = [aws_internet_gateway.this]
 }
