@@ -28,6 +28,15 @@ resource "aws_route" "private_default" {
   nat_gateway_id         = awscc_ec2_nat_gateway.this.nat_gateway_id
 }
 
+# IPv6 route for private subnets to Egress-only Internet Gateway
+resource "aws_route" "private_ipv6_egress" {
+  for_each = var.assign_generated_ipv6_cidr_block ? var.private_subnets : {}
+
+  route_table_id              = aws_route_table.private[each.key].id
+  destination_ipv6_cidr_block = "::/0"
+  egress_only_gateway_id      = aws_egress_only_internet_gateway.this.id
+}
+
 resource "aws_route_table" "public" {
   for_each = var.public_subnets
 
@@ -56,4 +65,13 @@ resource "aws_route" "public_default" {
   route_table_id         = aws_route_table.public[each.key].id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this.id
+}
+
+# IPv6 route for public subnets to Internet Gateway
+resource "aws_route" "public_ipv6" {
+  for_each = var.assign_generated_ipv6_cidr_block ? var.public_subnets : {}
+
+  route_table_id              = aws_route_table.public[each.key].id
+  destination_ipv6_cidr_block = "::/0"
+  gateway_id                  = aws_internet_gateway.this.id
 }
