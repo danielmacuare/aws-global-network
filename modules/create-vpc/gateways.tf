@@ -9,30 +9,30 @@ resource "aws_internet_gateway" "this" {
   )
 }
 
-resource "aws_eip" "nat_gateways" {
-  for_each = var.public_subnets
-  domain   = "vpc"
+# resource "aws_eip" "nat_gateways" {
+#   for_each = var.public_subnets
+#   domain   = "vpc"
+#
+#   tags = merge(
+#     var.default_tags,
+#     {
+#       Name = format("eip-%s-ngw-%s-%s", each.key, var.aws_region_short, var.environment)
+#     }
+#   )
+# }
 
-  tags = merge(
-    var.default_tags,
-    {
-      Name = format("eip-%s-ngw-%s-%s", each.key, var.aws_region_short, var.environment)
-    }
-  )
-}
-
-resource "aws_nat_gateway" "this" {
-  for_each = var.public_subnets
-
-  allocation_id = aws_eip.nat_gateways[each.key].id
-  subnet_id     = aws_subnet.public[each.key].id
-
-  tags = merge(
-    var.default_tags,
-    {
-      Name = format("ngw-%s-%s-%s", each.key, var.aws_region_short, var.environment)
-    }
-  )
-
-  depends_on = [aws_internet_gateway.this]
-}
+# resource "aws_nat_gateway" "this" {
+#   for_each = var.public_subnets
+#
+#   allocation_id = aws_eip.nat_gateways[each.key].id
+#   subnet_id     = aws_subnet.public[each.key].id
+#
+#   tags = merge(
+#     var.default_tags,
+#     {
+#       Name = format("ngw-%s-%s-%s", each.key, var.aws_region_short, var.environment)
+#     }
+#   )
+#
+#   depends_on = [aws_internet_gateway.this]
+# }
