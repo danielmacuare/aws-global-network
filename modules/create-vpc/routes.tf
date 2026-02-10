@@ -6,19 +6,27 @@ resource "aws_route_table" "private" {
   tags = merge(
     var.default_tags,
     {
-      Name  = format("sub-%s-%s-${each.key}", var.aws_region_short, var.environment)
+      Name  = format("rtb-%s-%s-${each.key}", var.aws_region_short, var.environment)
       Scope = local.private_subnets_tag
     }
   )
 }
 
-#resource "aws_route_table_association" "private" {
-#for_each = aws_route_table.private
+resource "aws_route_table_association" "private" {
+  for_each = aws_route_table.private
 
-#subnet_id      = aws_subnet.public[count.index].id
-#route_table_id = each.value["id"]
+  subnet_id      = aws_subnet.private[each.key].id
+  route_table_id = each.value["id"]
+}
 
-#}
+# Default route for private subnets to NAT Gateway
+resource "aws_route" "private_default" {
+  for_each = var.private_subnets
+
+  route_table_id         = aws_route_table.private[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.this[each.key].id
+}
 
 resource "aws_route_table" "public" {
   for_each = var.public_subnets
@@ -28,22 +36,24 @@ resource "aws_route_table" "public" {
   tags = merge(
     var.default_tags,
     {
-      Name  = format("sub-%s-%s-${each.key}", var.aws_region_short, var.environment)
+      Name  = format("rtb-%s-%s-${each.key}", var.aws_region_short, var.environment)
       Scope = local.public_subnets_tag
     }
   )
 }
 
+resource "aws_route_table_association" "public" {
+  for_each = aws_route_table.public
 
-#resource "aws_route" "private_subnet_default" {
-#route_table_id         = aws_route_table.public.id
-#destination_cidr_block = "0.0.0.0/0"
-#gateway_id             = aws_internet_gateway.main.id
-#}
+  subnet_id      = aws_subnet.public[each.key].id
+  route_table_id = each.value["id"]
+}
 
+# Default route for public subnets to Internet Gateway
+resource "aws_route" "public_default" {
+  for_each = var.public_subnets
 
-#resource "aws_route" "public_subnet_default" {
-#route_table_id         = aws_route_table.public.id
-#destination_cidr_block = "0.0.0.0/0"
-#gateway_id             = aws_internet_gateway.main.id
-#}
+  route_table_id         = aws_route_table.public[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.this.id
+}
