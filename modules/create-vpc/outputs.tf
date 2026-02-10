@@ -14,6 +14,11 @@ output "public_subnets" {
 }
 
 output "private_route_tables" {
-  description = "List of IDs of public subnets."
+  description = "Private Route Tables"
   value       = aws_route_table.private
 }
+
+# output "nat_gateway" {
+#   description = "Regional NAT Gateway"
+#   value       = aws_nat_gateway.this
+# }

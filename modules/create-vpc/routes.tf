@@ -19,14 +19,14 @@ resource "aws_route_table_association" "private" {
   route_table_id = each.value["id"]
 }
 
-# Default route for private subnets to NAT Gateway
-resource "aws_route" "private_default" {
-  for_each = var.private_subnets
-
-  route_table_id         = aws_route_table.private[each.key].id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.this[each.key].id
-}
+# Default route for private subnets to Regional NAT Gateway
+# resource "aws_route" "private_default" {
+#   for_each = var.private_subnets
+#
+#   route_table_id         = aws_route_table.private[each.key].id
+#   destination_cidr_block = "0.0.0.0/0"
+#   nat_gateway_id         = aws_nat_gateway.this[each.key].id
+# }
 
 resource "aws_route_table" "public" {
   for_each = var.public_subnets
