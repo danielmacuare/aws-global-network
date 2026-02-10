@@ -18,7 +18,7 @@ output "private_route_tables" {
   value       = aws_route_table.private
 }
 
-# output "nat_gateway" {
-#   description = "Regional NAT Gateway"
-#   value       = aws_nat_gateway.this
-# }
+output "nat_gateway" {
+  description = "Regional NAT Gateway"
+  value       = awscc_ec2_nat_gateway.this
+}
