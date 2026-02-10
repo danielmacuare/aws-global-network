@@ -20,3 +20,8 @@ output "private_route_tables_id" {
   value       = { for route-table, attribute in module.vpc-main.private_route_tables : route-table => attribute["id"] }
   description = "Private Route Tables' ID"
 }
+
+output "nat_gateway_id" {
+  value       = module.vpc-main.nat_gateway.nat_gateway_id
+  description = "Regional NAT Gateway ID"
+}
