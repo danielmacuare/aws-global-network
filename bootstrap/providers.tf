@@ -5,7 +5,7 @@ terraform {
     # AWS Common Commands - https://registry.terraform.io/providers/hashicorp/awscc/latest/docs
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 4.16.0"
+      version = ">= 6.31.0"
     }
     awscc = {
       source  = "hashicorp/awscc"
