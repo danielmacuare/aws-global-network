@@ -1,0 +1,28 @@
+data "aws_ami" "ubuntu_2404" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+}
+
+data "aws_security_group" "default" {
+  vpc_id = var.vpc_id
+
+  filter {
+    name   = "group-name"
+    values = ["default"]
+  }
+}

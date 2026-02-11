@@ -25,7 +25,8 @@ provider "registry.terraform.io/hashicorp/aws" {
 }
 
 provider "registry.terraform.io/hashicorp/awscc" {
-  version = "1.70.0"
+  version     = "1.70.0"
+  constraints = ">= 1.70.0"
   hashes = [
     "h1:ZTYciyeSu2SWWFIQ3wS8U9PwR7FAhxB30aO0pnkpgXk=",
     "zh:041253de8a9f251872e4528c57d72038a66d189cf93543b4e1b7c3df48c63266",
