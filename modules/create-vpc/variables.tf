@@ -1,9 +1,6 @@
 variable "default_tags" {
-  default = {
-    owning_team          = "NETENG"
-    managed_by_terraform = true
-  }
   type = map(string)
+  description = "Default tags to apply to all resources"
 }
 
 ## Regional Vars

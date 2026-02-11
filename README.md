@@ -48,3 +48,10 @@ The project includes a GitHub Actions pipeline that:
 - **create-vpc**: Creates VPC with public/private subnets, route tables, and NAT gateways
 
 See the [Deployment Guide](docs/deployment.md) for detailed module usage examples.
+
+## Build Sequence
+
+- create-key-pair: This will create an SSH key pair and save it to the `ssh-keys/` directory. Each region will have its own set of keys to be able to SSH into the instances. Best Practice would be to use AWS Systems Manager Session Manager to connect to the machine without keys.
+- create-vpc: This will create a VPC with public and private subnets, route tables, and NAT gateways.
+- create-ec2: This will create EC2 instances in the public and private subnets.
+-

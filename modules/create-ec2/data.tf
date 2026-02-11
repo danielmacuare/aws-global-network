@@ -17,3 +17,12 @@ data "aws_ami" "ubuntu_2404" {
     values = ["ebs"]
   }
 }
+
+data "aws_security_group" "default" {
+  vpc_id = var.vpc_id
+
+  filter {
+    name   = "group-name"
+    values = ["default"]
+  }
+}
