@@ -6,8 +6,8 @@ resource "aws_route_table" "private" {
   tags = merge(
     var.default_tags,
     {
-      Name  = format("rtb-%s-%s-${each.key}", var.aws_region_short, var.environment)
-      Scope = local.private_subnets_tag
+      Name = format("rtb-%s-%s-${each.key}", var.aws_region_short, var.environment)
+      scope = local.private_subnets_tag
     }
   )
 }
@@ -36,8 +36,8 @@ resource "aws_route_table" "public" {
   tags = merge(
     var.default_tags,
     {
-      Name  = format("rtb-%s-%s-${each.key}", var.aws_region_short, var.environment)
-      Scope = local.public_subnets_tag
+      Name = format("rtb-%s-%s-${each.key}", var.aws_region_short, var.environment)
+      scope = local.public_subnets_tag
     }
   )
 }

@@ -1,7 +1,7 @@
 locals {
   region       = "eu-west-2"
   region_short = "euw2"
-  environment  = "test"
+  environment  = "ec2-test"
   project_root = pathexpand("~/repos/aws-global-network")
 
   default_tags = {
