@@ -34,5 +34,16 @@ resource "awscc_ec2_nat_gateway" "this" {
     ]
   )
 
+  lifecycle {
+  # 1 - When you create a NAT Gateway in "regional" - "auto" mode, AWS automatically assigns 
+  # and manages the Elastic IP (EIP) addresses and their associations.
+  # 2 - After the NAT Gateway is created, AWS populates the availability_zone_addresses attribute with these details.
+  # 3 - Because these values weren't in the original Terraform code, Terraform sees them as "extra" or 
+  # "unexpected" changes during the next run and tries to remove them.
+    ignore_changes = [
+      availability_zone_addresses
+    ]
+  }
+
   depends_on = [aws_internet_gateway.this]
 }
