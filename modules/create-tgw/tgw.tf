@@ -1,5 +1,5 @@
 resource "aws_ec2_transit_gateway" "this" {
-  description                     = "Transit Gateway for ${var.aws_region}"
+  description                     = "Transit Gateway for ${var.region}"
   amazon_side_asn                 = var.amazon_side_asn
   dns_support                     = var.dns_support
   vpn_ecmp_support                = var.vpn_ecmp_support
