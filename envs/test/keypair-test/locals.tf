@@ -7,8 +7,8 @@ locals {
   default_tags = {
     owning_team          = "NETENG"
     managed_by_terraform = true
-    environment         = local.environment
-    region            = local.region
-    region_short      = local.region_short
+    environment          = local.environment
+    region               = local.region
+    region_short         = local.region_short
   }
 }
