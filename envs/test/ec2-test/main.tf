@@ -11,7 +11,7 @@ module "test_vpc" {
   aws_region       = local.region
   aws_region_short = local.region_short
   environment      = local.environment
-  vpc_name         = "${local.region_short}-${local.environment}"
+  vpc_name         = local.vpc_name
   vpc_cidr         = "10.0.0.0/16"
   default_tags     = local.default_tags
 
@@ -43,9 +43,9 @@ module "test_ec2" {
   private_subnets = module.test_vpc.private_subnets
   key_pair_name   = module.test_key_pair.key_pair_name
 
-  # Security groups are optional - using VPC default
-  # public_security_group_id  = null  # (default)
-  # private_security_group_id = null  # (default)
+  # Using custom security groups from security module
+  public_security_group_id  = module.security.bastion_security_group_id
+  private_security_group_id = module.security.private_security_group_id
 }
 
 output "key_pair_name" {
