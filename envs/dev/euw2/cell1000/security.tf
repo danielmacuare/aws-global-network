@@ -1,5 +1,5 @@
 module "security" {
-  source       = "../../../modules/security"
+  source       = "../../../../modules/security"
   vpc_id       = module.vpc-main.vpc.id
   vpc_cidr     = module.vpc-main.vpc.cidr_block # From VPC module output
   region_short = local.region_short
