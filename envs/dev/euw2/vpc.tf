@@ -1,12 +1,12 @@
 module "vpc-main" {
   source = "../../../modules/create-vpc/"
 
-  aws_region       = local.region
-  aws_region_short = local.region_short
-  environment      = local.environment
-  vpc_name         = local.vpc_name # Dynamic from locals
-  vpc_cidr         = "10.0.0.0/20"
-  default_tags     = local.default_tags
+  region       = local.region
+  region_short = local.region_short
+  environment  = local.environment
+  vpc_name     = local.vpc_name # Dynamic from locals
+  vpc_cidr     = "10.0.0.0/20"
+  default_tags = local.default_tags
 
   private_subnets = {
 
