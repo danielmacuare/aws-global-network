@@ -18,6 +18,7 @@ resource "local_file" "private_key" {
   file_permission = "0400"
 }
 
+# Terraform handles idempotency
 resource "aws_key_pair" "this" {
   key_name   = "kp-${var.aws_region_short}-${var.environment}"
   public_key = tls_private_key.this.public_key_openssh
