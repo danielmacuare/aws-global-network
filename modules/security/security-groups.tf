@@ -40,7 +40,7 @@ resource "aws_security_group" "bastion" {
   }
 
   tags = merge(var.default_tags, {
-    Name = format("sg-bastion-%s-%s", var.aws_region_short, var.environment)
+    Name = format("sg-bastion-%s-%s", var.region_short, var.environment)
     type = "bastion-security-group"
   })
 }
@@ -69,7 +69,7 @@ resource "aws_security_group" "private" {
   }
 
   tags = merge(var.default_tags, {
-    Name = format("sg-private-%s-%s", var.aws_region_short, var.environment)
+    Name = format("sg-private-%s-%s", var.region_short, var.environment)
     type = "private-security-group"
   })
 }

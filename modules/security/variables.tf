@@ -13,7 +13,7 @@ variable "default_tags" {
   description = "Default tags to apply to all security group resources"
 }
 
-variable "aws_region_short" {
+variable "region_short" {
   type        = string
   description = "Short region code for naming"
 }

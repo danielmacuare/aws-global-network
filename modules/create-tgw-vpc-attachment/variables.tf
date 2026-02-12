@@ -28,7 +28,7 @@ variable "environment" {
   type        = string
 }
 
-variable "aws_region_short" {
+variable "region_short" {
   description = "Short region code (e.g., euw2)"
   type        = string
 }

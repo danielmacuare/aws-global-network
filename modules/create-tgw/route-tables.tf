@@ -4,7 +4,7 @@ resource "aws_ec2_transit_gateway_route_table" "prod" {
   tags = merge(
     var.default_tags,
     {
-      Name           = format("rt-tgw-%s-prod", var.aws_region_short)
+      Name           = format("rt-tgw-%s-prod", var.region_short)
       type           = "transit-gateway-route-table"
       routing_policy = "prod"
       environment    = "prod"
@@ -18,7 +18,7 @@ resource "aws_ec2_transit_gateway_route_table" "dev" {
   tags = merge(
     var.default_tags,
     {
-      Name           = format("rt-tgw-%s-dev", var.aws_region_short)
+      Name           = format("rt-tgw-%s-dev", var.region_short)
       type           = "transit-gateway-route-table"
       routing_policy = "dev"
       environment    = "dev"
@@ -32,7 +32,7 @@ resource "aws_ec2_transit_gateway_route_table" "shared" {
   tags = merge(
     var.default_tags,
     {
-      Name           = format("rt-tgw-%s-shared", var.aws_region_short)
+      Name           = format("rt-tgw-%s-shared", var.region_short)
       type           = "transit-gateway-route-table"
       routing_policy = "shared"
       environment    = "shared"

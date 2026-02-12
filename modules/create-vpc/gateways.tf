@@ -4,7 +4,7 @@ resource "aws_internet_gateway" "this" {
   tags = merge(
     var.default_tags,
     {
-      Name = format("igw-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
+      Name = format("igw-%s-%s-%s", var.region_short, var.environment, var.vpc_name)
     }
   )
 }
@@ -21,7 +21,7 @@ resource "awscc_ec2_nat_gateway" "this" {
     [
       {
         key   = "Name"
-        value = format("ngw-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
+        value = format("ngw-%s-%s-%s", var.region_short, var.environment, var.vpc_name)
       },
       {
         key   = "Type"

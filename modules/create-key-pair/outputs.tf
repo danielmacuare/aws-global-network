@@ -15,5 +15,5 @@ output "key_pair_fingerprint" {
 
 output "private_key_path" {
   description = "Local path to the private key file"
-  value       = "${var.project_root}/ssh-keys/${var.aws_region_short}-${var.environment}.pem"
+  value       = "${var.project_root}/ssh-keys/${var.region_short}-${var.environment}.pem"
 }

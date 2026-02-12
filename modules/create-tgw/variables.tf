@@ -3,12 +3,12 @@ variable "default_tags" {
   type        = map(string)
 }
 
-variable "aws_region" {
+variable "region" {
   description = "Full AWS region name"
   type        = string
 }
 
-variable "aws_region_short" {
+variable "region_short" {
   description = "Short region code (e.g., euw2)"
   type        = string
 }

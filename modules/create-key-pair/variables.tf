@@ -3,7 +3,7 @@ variable "project_root" {
   description = "Absolute path to project root where ssh-keys folder will be created"
 }
 
-variable "aws_region_short" {
+variable "region_short" {
   type        = string
   description = "Short region code (euw2, use1, etc.)"
 }

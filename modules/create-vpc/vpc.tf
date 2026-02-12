@@ -6,7 +6,7 @@ resource "aws_vpc" "this" {
   tags = merge(
     var.default_tags,
     {
-      Name = format("vpc-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
+      Name = format("vpc-%s-%s-%s", var.region_short, var.environment, var.vpc_name)
     }
   )
 }
@@ -18,7 +18,7 @@ resource "aws_egress_only_internet_gateway" "this" {
   tags = merge(
     var.default_tags,
     {
-      Name = format("egipv6-igw-%s-%s-%s", var.aws_region_short, var.environment, var.vpc_name)
+      Name = format("egipv6-igw-%s-%s-%s", var.region_short, var.environment, var.vpc_name)
     }
   )
 }
