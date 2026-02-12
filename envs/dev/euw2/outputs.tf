@@ -1,9 +1,24 @@
+# ==============================================================================
+# Complex Object Outputs
+# ==============================================================================
+# These outputs provide structured objects with multiple attributes per resource.
+#
+# Use case: Internal consumption within this environment (envs/dev/euw2/)
+# - Used by ec2s.tf and security.tf for rich attribute access
+# - Provides full context (IDs, CIDR blocks, etc.) in a single output
+# - Ideal when consumers need multiple attributes from the same resource
+#
+# Example internal usage:
+#   module.vpc-main.vpc.id
+#   module.vpc-main.private_subnets["subnet-a"].cidr_ipv4
+# ==============================================================================
+
 output "vpc" {
   value = {
     "cidr_block" = module.vpc-main.vpc.cidr_block
     "id"         = module.vpc-main.vpc.id
   }
-  description = "VPC output"
+  description = "VPC output with multiple attributes"
 }
 
 output "private_subnets_id" {
@@ -36,4 +51,34 @@ output "private_route_tables_id" {
 output "nat_gateway_id" {
   value       = module.vpc-main.nat_gateway.nat_gateway_id
   description = "Regional NAT Gateway ID"
+}
+
+# ==============================================================================
+# Simplified Scalar Outputs
+# ==============================================================================
+# These outputs provide simple types (strings, lists) for cross-environment access.
+#
+# Use case: Remote state consumption by other environments (e.g., TGW attachments)
+# - Used by envs/networking/euw2/tgw-vpc-atts/ via terraform_remote_state
+# - Eliminates need for complex for-loops in remote consumers
+# - Provides clean, simple interface for cross-boundary consumption
+#
+# Example remote usage:
+#   data.terraform_remote_state.dev_vpc.outputs.vpc_id
+#   data.terraform_remote_state.dev_vpc.outputs.private_subnet_ids
+# ==============================================================================
+
+output "vpc_id" {
+  value       = module.vpc-main.vpc_id
+  description = "VPC ID (convenience output for remote state)"
+}
+
+output "private_subnet_ids" {
+  value       = module.vpc-main.private_subnet_ids
+  description = "List of private subnet IDs (convenience output for remote state)"
+}
+
+output "public_subnet_ids" {
+  value       = module.vpc-main.public_subnet_ids
+  description = "List of public subnet IDs (convenience output for remote state)"
 }
