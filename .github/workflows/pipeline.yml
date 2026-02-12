@@ -20,7 +20,7 @@ jobs:
       # https://stackoverflow.com/questions/64953274/how-to-send-passphrase-for-ssh-add-with-github-actions
       GIT_SSH_KEY_PASSPHRASE: ${{secrets.GIT_SSH_KEY_PASSPHRASE}}
       GIT_SSH_KEY: ${{secrets.GIT_SSH_KEY}}
-      TF_ROOT: envs/dev/euw2/
+      TF_ROOT: envs/dev/euw2/cell1000/
       # This instructs the CLI to send cost estimates to Infracost Cloud. Our SaaS product
       #   complements the open source CLI by giving teams advanced visibility and controls.
       #   The cost estimates are transmitted in JSON format and do not contain any cloud
