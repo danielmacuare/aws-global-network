@@ -78,7 +78,7 @@ resource "local_file" "private_key" {
   depends_on = [null_resource.create_ssh_dir]
 
   content         = tls_private_key.this.private_key_pem
-  filename        = "${var.project_root}/ssh-keys/${var.aws_region_short}-${var.environment}.pem"
+  filename        = "${var.project_root}/ssh-keys/${var.region_short}-${var.environment}.pem"
   file_permission = "0400"
 }
 ```
@@ -98,13 +98,13 @@ resource "local_file" "private_key" {
 
 ```terraform
 resource "aws_key_pair" "this" {
-  key_name   = "kp-${var.aws_region_short}-${var.environment}"
+  key_name   = "kp-${var.region_short}-${var.environment}"
   public_key = tls_private_key.this.public_key_openssh
 
   tags = merge(
     var.default_tags,
     {
-      Name = "kp-${var.aws_region_short}-${var.environment}"
+      Name = "kp-${var.region_short}-${var.environment}"
     }
   )
 }
@@ -188,7 +188,7 @@ terraform import module.key_pair.aws_key_pair.this kp-euw2-dev
 module "key_pair" {
   source           = "../../../modules/create-key-pair"
   project_root     = local.project_root
-  aws_region_short = local.region_short
+  region_short = local.region_short
   environment      = local.environment
   default_tags     = local.default_tags
 }

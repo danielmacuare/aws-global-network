@@ -79,7 +79,7 @@ modules/create-tgw-vpc-attachment/
 | `subnet_ids` | list(string) | List of subnet IDs (one per AZ) for the attachment |
 | `transit_gateway_route_table_id` | string | TGW route table ID to associate with |
 | `environment` | string | Environment identifier (dev/prod/shared) |
-| `aws_region_short` | string | Short region code (e.g., "euw2") |
+| `region_short` | string | Short region code (e.g., "euw2") |
 | `vpc_name` | string | VPC identifier for naming (e.g., "main") |
 
 ### Optional Variables
@@ -116,7 +116,7 @@ module "attachment_dev_vpc" {
 
   # Metadata
   environment      = "dev"
-  aws_region_short = "euw2"
+  region_short = "euw2"
   vpc_name         = "main"
 
   default_tags = {

@@ -160,7 +160,7 @@ terraform {
 **Decision**: Require all critical inputs, provide sensible defaults for optional settings
 
 **Critical Required Variables**:
-- **TGW Module**: `aws_region`, `aws_region_short`, `amazon_side_asn`, `default_tags`
+- **TGW Module**: `region`, `region_short`, `amazon_side_asn`, `default_tags`
 - **Attachment Module**: `transit_gateway_id`, `vpc_id`, `subnet_ids`, `transit_gateway_route_table_id`
 
 **Rationale**:

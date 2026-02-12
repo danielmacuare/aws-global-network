@@ -74,8 +74,8 @@ modules/create-tgw/
 | Variable | Type | Description |
 |----------|------|-------------|
 | `default_tags` | map(string) | Standard project tags for resource tagging |
-| `aws_region` | string | Full AWS region name (e.g., "eu-west-2") |
-| `aws_region_short` | string | Short region code (e.g., "euw2") |
+| `region` | string | Full AWS region name (e.g., "eu-west-2") |
+| `region_short` | string | Short region code (e.g., "euw2") |
 | `amazon_side_asn` | number | BGP ASN for the Transit Gateway |
 
 ### Optional Variables
@@ -105,8 +105,8 @@ The module exports the following outputs for use by other modules and configurat
 module "tgw" {
   source = "../../../modules/create-tgw"
 
-  aws_region       = "eu-west-2"
-  aws_region_short = "euw2"
+  region       = "eu-west-2"
+  region_short = "euw2"
   amazon_side_asn  = 64514
 
   default_tags = {
