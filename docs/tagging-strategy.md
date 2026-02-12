@@ -61,7 +61,7 @@ All tags use **lowercase** keys with underscores for multi-word keys:
 tags = merge(
   var.default_tags,
   {
-    Name = format("bastion-%s-%s-%s", var.aws_region_short, var.environment, each.key)  # PascalCase for GUI
+    Name = format("bastion-%s-%s-%s", var.region_short, var.environment, each.key)  # PascalCase for GUI
     type = "bastion"  # lowercase for our standard
   }
 )
@@ -143,7 +143,7 @@ resource "aws_instance" "example" {
   tags = merge(
     var.default_tags,
     {
-      name = format("bastion-%s-%s-%s", var.aws_region_short, var.environment, each.key)
+      name = format("bastion-%s-%s-%s", var.region_short, var.environment, each.key)
       type = "bastion"
     }
   )
@@ -174,7 +174,7 @@ variable "default_tags" {
 tags = merge(
   var.default_tags,
   {
-    name = format("resource-%s-%s-%s", var.aws_region_short, var.environment, each.key)
+    name = format("resource-%s-%s-%s", var.region_short, var.environment, each.key)
     type = "resource-type"
   }
 )
@@ -245,8 +245,8 @@ locals {
 ```hcl
 module "vpc" {
   source           = "../../../modules/create-vpc"
-  aws_region       = local.region
-  aws_region_short = local.region_short
+  region       = local.region
+  region_short = local.region_short
   environment      = local.environment
   vpc_name         = "main"
   vpc_cidr         = "10.0.0.0/16"
@@ -267,7 +267,7 @@ resource "aws_subnet" "public" {
   tags = merge(
     var.default_tags,
     {
-      name = format("sub-%s-%s-pub-%s", var.aws_region_short, var.environment, each.key)
+      name = format("sub-%s-%s-pub-%s", var.region_short, var.environment, each.key)
       type = "public"
     }
   )

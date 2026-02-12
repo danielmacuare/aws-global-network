@@ -35,8 +35,8 @@ terraform {
 Check the configuration in `envs/dev/euw2/cell1000/variables.tfvars`:
 
 ```hcl
-aws_region       = "eu-west-2"
-aws_region_short = "euw2"
+region       = "eu-west-2"
+region_short = "euw2"
 environment      = "dev"
 ```
 

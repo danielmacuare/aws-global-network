@@ -72,8 +72,8 @@ Example usage:
 module "vpc-main" {
   source = "../../../modules/create-vpc/"
 
-  aws_region       = "eu-west-2"
-  aws_region_short = "euw2"
+  region       = "eu-west-2"
+  region_short = "euw2"
   environment      = "dev"
   vpc_name         = "main"
   vpc_cidr         = "10.0.0.0/20"

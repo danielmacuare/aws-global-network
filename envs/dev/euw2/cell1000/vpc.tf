@@ -65,7 +65,7 @@ module "vpc-main" {
   #tags = merge(
   #local.default_tags,
   #{
-  #Name       = "tgw-${var.aws_region}"
+  #Name       = "tgw-${var.region}"
   #active_tgw = "true"
   #})
 }
