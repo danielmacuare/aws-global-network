@@ -5,7 +5,7 @@
 1. **Navigate to the environment directory:**
 
    ```bash
-   cd envs/dev/euw2
+   cd envs/dev/euw2/cell1000
    ```
 
 2. **Initialize Terraform:**
@@ -45,7 +45,7 @@ To deploy to a new region:
 2. **Copy configuration files:**
 
    ```bash
-   cp envs/dev/euw2/* envs/dev/use1/
+   cp -r envs/dev/euw2/cell1000 envs/dev/use1/cell1000
    ```
 
 3. **Update region-specific values:**
