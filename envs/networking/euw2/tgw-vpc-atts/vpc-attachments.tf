@@ -7,8 +7,8 @@ module "attachment_dev_vpc" {
 
   transit_gateway_route_table_id = data.terraform_remote_state.tgw.outputs.route_table_dev.id
 
-  environment      = "dev"
-  aws_region_short = local.region_short
-  vpc_name         = "main"
-  default_tags     = local.default_tags
+  environment  = "dev"
+  region_short = local.region_short
+  vpc_name     = "main"
+  default_tags = local.default_tags
 }

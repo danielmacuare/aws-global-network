@@ -1,19 +1,19 @@
 module "test_key_pair" {
-  source           = "../../../modules/create-key-pair"
-  project_root     = local.project_root
-  aws_region_short = local.region_short
-  environment      = local.environment
-  default_tags     = local.default_tags
+  source       = "../../../modules/create-key-pair"
+  project_root = local.project_root
+  region_short = local.region_short
+  environment  = local.environment
+  default_tags = local.default_tags
 }
 
 module "test_vpc" {
-  source           = "../../../modules/create-vpc"
-  aws_region       = local.region
-  aws_region_short = local.region_short
-  environment      = local.environment
-  vpc_name         = local.vpc_name
-  vpc_cidr         = "10.0.0.0/16"
-  default_tags     = local.default_tags
+  source       = "../../../modules/create-vpc"
+  region       = local.region
+  region_short = local.region_short
+  environment  = local.environment
+  vpc_name     = local.vpc_name
+  vpc_cidr     = "10.0.0.0/16"
+  default_tags = local.default_tags
 
   public_subnets = {
     pub-0 = { az = "${local.region}a", cidr = "10.0.10.0/24" }
@@ -31,13 +31,13 @@ module "test_vpc" {
 }
 
 module "test_ec2" {
-  source           = "../../../modules/create-ec2"
-  aws_region       = local.region
-  aws_region_short = local.region_short
-  environment      = local.environment
-  vpc_name         = "${local.region_short}-${local.environment}"
-  vpc_id           = module.test_vpc.vpc.id
-  default_tags     = local.default_tags
+  source       = "../../../modules/create-ec2"
+  region       = local.region
+  region_short = local.region_short
+  environment  = local.environment
+  vpc_name     = "${local.region_short}-${local.environment}"
+  vpc_id       = module.test_vpc.vpc.id
+  default_tags = local.default_tags
 
   public_subnets  = module.test_vpc.public_subnets
   private_subnets = module.test_vpc.private_subnets
