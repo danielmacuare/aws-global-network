@@ -18,21 +18,21 @@ cd aws-poc
 
 ### 2. Configure Backend Storage
 
-Update the S3 bucket name in `envs/dev/euw2/backend.tf`:
+Update the S3 bucket name in `envs/dev/euw2/cell1000/backend.tf`:
 
 ```hcl
 terraform {
   backend "s3" {
     region = "eu-west-2"
     bucket = "your-terraform-state-bucket"  # Update this
-    key    = "env-dev/euw2/terraform.tfstate"
+    key    = "env-dev/euw2/cell1000/terraform.tfstate"
   }
 }
 ```
 
 ### 3. Review Configuration
 
-Check the configuration in `envs/dev/euw2/variables.tfvars`:
+Check the configuration in `envs/dev/euw2/cell1000/variables.tfvars`:
 
 ```hcl
 aws_region       = "eu-west-2"
@@ -68,7 +68,7 @@ tfsec .
 3. **Test your changes:**
 
    ```bash
-   cd envs/dev/euw2
+   cd envs/dev/euw2/cell1000
    terraform plan -var-file="variables.tfvars"
    ```
 
@@ -87,6 +87,6 @@ tfsec .
 To destroy the infrastructure:
 
 ```bash
-cd envs/dev/euw2
+cd envs/dev/euw2/cell1000
 terraform destroy -var-file="variables.tfvars"
 ```
