@@ -5,20 +5,19 @@
 #
 # Use case: Internal consumption within this environment (envs/dev/euw2/cell1000/)
 # - Used by ec2s.tf and security.tf for rich attribute access
-# - Provides full context (IDs, CIDR blocks, etc.) in a single output
+# - Provides full context (IDs, CIDR blocks, name, environment) in a single output
 # - Ideal when consumers need multiple attributes from the same resource
 #
 # Example internal usage:
 #   module.vpc-main.vpc.id
-#   module.vpc-main.private_subnets["subnet-a"].cidr_ipv4
+#   module.vpc-main.vpc.cidr_block
+#   module.vpc-main.vpc.name
+#   module.vpc-main.vpc.environment
 # ==============================================================================
 
 output "vpc" {
-  value = {
-    "cidr_block" = module.vpc-main.vpc.cidr_block
-    "id"         = module.vpc-main.vpc.id
-  }
-  description = "VPC output with multiple attributes"
+  value       = module.vpc-main.vpc
+  description = "VPC output with all attributes including id, cidr_block, name, and environment"
 }
 
 output "private_subnets_id" {
@@ -64,14 +63,11 @@ output "nat_gateway_id" {
 # - Provides clean, simple interface for cross-boundary consumption
 #
 # Example remote usage:
-#   data.terraform_remote_state.dev_vpc.outputs.vpc_id
+#   data.terraform_remote_state.dev_vpc.outputs.vpc.id
+#   data.terraform_remote_state.dev_vpc.outputs.vpc.name
+#   data.terraform_remote_state.dev_vpc.outputs.vpc.environment
 #   data.terraform_remote_state.dev_vpc.outputs.private_subnet_ids
 # ==============================================================================
-
-output "vpc_id" {
-  value       = module.vpc-main.vpc_id
-  description = "VPC ID (convenience output for remote state)"
-}
 
 output "private_subnet_ids" {
   value       = module.vpc-main.private_subnet_ids
