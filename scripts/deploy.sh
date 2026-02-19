@@ -210,6 +210,53 @@ rotate_logs() {
   fi
 }
 
+# ── Instance inventory ────────────────────────────────────────────────────────
+# Prints a formatted table of EC2 instance names and IPs for each VPC cell.
+# Requires jq. Skipped in dry-run mode (instances are not created).
+print_instance_inventory() {
+  [[ "$DRY_RUN" == "true" ]] && return 0
+
+  if ! command -v jq >/dev/null 2>&1; then
+    log_warn "jq not found — skipping instance inventory. Install with: brew install jq"
+    return 0
+  fi
+
+  log_phase "Instance Inventory"
+
+  local cell abs_dir ssh_key instances_json name ip
+
+  for cell in "${VPC_CELLS[@]}"; do
+    abs_dir="${REPO_ROOT}/${cell}"
+    [[ -d "$abs_dir" ]] || continue
+
+    echo -e "${BOLD}  ${cell}${NC}"
+
+    ssh_key="$(terraform -chdir="$abs_dir" output -raw ssh_key_path 2>/dev/null || true)"
+    [[ -n "$ssh_key" ]] && echo -e "  SSH Key : ${CYAN}${ssh_key}${NC}"
+    echo ""
+
+    instances_json="$(terraform -chdir="$abs_dir" output -json instances 2>/dev/null || true)"
+    if [[ -z "$instances_json" || "$instances_json" == "null" ]]; then
+      log_warn "  No instance output found for ${cell} — has terraform apply been run?"
+      echo ""
+      continue
+    fi
+
+    echo -e "  ${GREEN}Bastions (public):${NC}"
+    while IFS=$'\t' read -r name ip; do
+      printf "    %-40s %s\n" "$name" "$ip"
+      [[ -n "$ssh_key" ]] && printf "    ${BLUE}ssh -i %s ubuntu@%s${NC}\n" "$ssh_key" "$ip"
+    done < <(echo "$instances_json" | jq -r '.bastions | to_entries[] | [.key, .value] | @tsv' | sort)
+    echo ""
+
+    echo -e "  ${YELLOW}Private Hosts (internal only):${NC}"
+    while IFS=$'\t' read -r name ip; do
+      printf "    %-40s %s\n" "$name" "$ip"
+    done < <(echo "$instances_json" | jq -r '.private_hosts | to_entries[] | [.key, .value] | @tsv' | sort)
+    echo ""
+  done
+}
+
 # ── Discovery ─────────────────────────────────────────────────────────────────
 # Discovers VPC cell directories: envs/{dev,prod}/<region>/<cell>/
 discover_vpc_cells() {
@@ -340,6 +387,9 @@ main() {
   else
     log_warn "No TGW Peering directories found (or --skip-peering set) — skipping Phase 3."
   fi
+
+  # ── Instance inventory ─────────────────────────────────────────────────────
+  print_instance_inventory
 
   # ── Done ───────────────────────────────────────────────────────────────────
   log_phase "Deployment Complete"
