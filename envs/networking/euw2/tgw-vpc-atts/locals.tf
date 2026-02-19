@@ -28,6 +28,10 @@ locals {
   # Current environment from variable
   current_environment = var.target_environment
 
+  # Supernet covering all cell CIDRs across all regions.
+  # Routed into the TGW from each VPC's private subnet route tables.
+  tgw_supernet_cidr = "10.0.0.0/8"
+
   default_tags = {
     owning_team          = "NETENG"
     managed_by_terraform = true
