@@ -6,7 +6,9 @@ Refactored the `envs/networking/euw2/tgw-vpc-atts/` environment to use dynamic, 
 
 The VPC module and environment outputs were also extended with simplified scalar outputs so that remote state consumers no longer need complex for-loops to extract IDs.
 
-**Status**: Implemented and merged to `feature/inter-vpc-routing`. Not yet applied to AWS.
+The `modules/create-tgw-vpc-attachment` module was extended to include VPC-side routes (`aws_route.tgw`) that add a 10.0.0.0/8 supernet route to each private subnet route table, routing east-west traffic through the TGW.
+
+**Status**: Fully implemented and merged to `feature/inter-vpc-routing`. Not yet applied to AWS.
 
 ---
 
@@ -18,6 +20,7 @@ The VPC module and environment outputs were also extended with simplified scalar
 4. Automatically assign the correct TGW route table (dev vs. prod) based on the `environment` output from each VPC's remote state.
 5. Expose `environment` and `vpc_name` from VPC remote state instead of hardcoding them in the attachment caller.
 6. Add simplified scalar outputs (`vpc_id`, `private_subnet_ids`, `public_subnet_ids`) to the VPC module and the `dev/euw2/cell1000` environment so remote state consumers have clean, direct access.
+7. Add VPC-side routes to the TGW supernet (10.0.0.0/8) in each private subnet route table within the `create-tgw-vpc-attachment` module.
 
 ---
 
@@ -97,6 +100,8 @@ cell_mappings = {
 current_environment = var.target_environment
 ```
 
+Also added `tgw_supernet_cidr = "10.0.0.0/8"` local for the VPC-side route supernet.
+
 **File**: `envs/networking/euw2/tgw-vpc-atts/locals.tf`
 
 ---
@@ -147,7 +152,7 @@ data "terraform_remote_state" "vpc_states" {
 
 ### `envs/networking/euw2/tgw-vpc-atts/vpc-attachments.tf`
 
-Replaced per-cell module blocks with a single `for_each` module call:
+Replaced per-cell module blocks with a single `for_each` module call. Added `private_route_table_ids` and `tgw_supernet_cidr` inputs to drive the VPC-side TGW routes:
 
 ```hcl
 module "vpc_attachments" {
@@ -170,6 +175,9 @@ module "vpc_attachments" {
   environment  = try(data.terraform_remote_state.vpc_states[each.key].outputs.vpc.environment, "dev")
   region_short = local.region_short
   vpc_name     = try(data.terraform_remote_state.vpc_states[each.key].outputs.vpc.name, "main")
+
+  private_route_table_ids = data.terraform_remote_state.vpc_states[each.key].outputs.private_route_tables_id
+  tgw_supernet_cidr       = local.tgw_supernet_cidr
 
   default_tags = merge(local.default_tags, {
     cell = each.key
@@ -206,15 +214,54 @@ output "attachment_count" {
 
 ---
 
+### `modules/create-tgw-vpc-attachment/vpc-attachment.tf`
+
+Extended the module to create VPC-side routes that send the TGW supernet from each private subnet route table to the TGW, enabling east-west traffic between cells and regions:
+
+```hcl
+# VPC-side route: send the TGW supernet from each private subnet route table
+# to the TGW, enabling east-west traffic between cells and regions.
+resource "aws_route" "tgw" {
+  for_each = var.private_route_table_ids
+
+  route_table_id         = each.value
+  destination_cidr_block = var.tgw_supernet_cidr
+  transit_gateway_id     = var.transit_gateway_id
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment.this]
+}
+```
+
+**File**: `modules/create-tgw-vpc-attachment/vpc-attachment.tf`
+
+---
+
+### `modules/create-tgw-vpc-attachment/variables.tf`
+
+Added two new optional variables to support the VPC-side routes:
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `private_route_table_ids` | `map(string)` | `{}` | Map of private route table IDs (key -> rtb-id) to add a TGW supernet route to. |
+| `tgw_supernet_cidr` | `string` | `"10.0.0.0/8"` | Supernet CIDR routed to the TGW from each private subnet route table. |
+
+**File**: `modules/create-tgw-vpc-attachment/variables.tf`
+
+---
+
 ## Architecture
 
 ```
 envs/networking/euw2/tgw-vpc-atts/
-  locals.tf          # cell_mappings{dev{cell1000...}, prod{cell1000, cell0001...}}
+  locals.tf          # cell_mappings{dev{cell1000...}, prod{cell1000, cell0001...}}, tgw_supernet_cidr
   variables.tf       # target_environment (dev|prod), backend_bucket
   data.tf            # tgw remote state + for_each vpc_states remote state
-  vpc-attachments.tf # single for_each module "vpc_attachments"
+  vpc-attachments.tf # single for_each module "vpc_attachments" with route table IDs
   outputs.tf         # vpc_attachments map, attachment_ids map, attachment_count
+
+modules/create-tgw-vpc-attachment/
+  vpc-attachment.tf  # TGW attachment + route table association/propagation + aws_route.tgw
+  variables.tf       # includes private_route_table_ids, tgw_supernet_cidr
 ```
 
 ### Data Flow
@@ -233,6 +280,10 @@ local.cell_mappings[current_environment]  ──► data.terraform_remote_state.
                                                     v
                                        TGW route table selection
                                        (dev RT or prod RT)
+                                                    |
+                                                    v
+                                       aws_route.tgw (for_each over private_route_table_ids)
+                                       destination: 10.0.0.0/8 -> TGW
 ```
 
 ---
@@ -249,7 +300,7 @@ dev = {
 }
 ```
 
-3. Run `terraform apply` in `envs/networking/euw2/tgw-vpc-atts/`. The new attachment is created automatically.
+3. Run `terraform apply` in `envs/networking/euw2/tgw-vpc-atts/`. The new attachment and VPC-side routes are created automatically.
 
 ---
 
@@ -259,18 +310,22 @@ dev = {
 |------|--------|
 | `modules/create-vpc/outputs.tf` — scalar outputs | Complete |
 | `envs/dev/euw2/cell1000/outputs.tf` — scalar outputs | Complete |
-| `envs/networking/euw2/tgw-vpc-atts/locals.tf` — cell_mappings | Complete |
+| `envs/networking/euw2/tgw-vpc-atts/locals.tf` — cell_mappings + tgw_supernet_cidr | Complete |
 | `envs/networking/euw2/tgw-vpc-atts/variables.tf` — new vars | Complete |
 | `envs/networking/euw2/tgw-vpc-atts/data.tf` — dynamic for_each | Complete |
-| `envs/networking/euw2/tgw-vpc-atts/vpc-attachments.tf` — for_each module | Complete |
+| `envs/networking/euw2/tgw-vpc-atts/vpc-attachments.tf` — for_each module with route inputs | Complete |
 | `envs/networking/euw2/tgw-vpc-atts/outputs.tf` — updated outputs | Complete |
+| `modules/create-tgw-vpc-attachment/vpc-attachment.tf` — aws_route.tgw VPC-side routes | Complete |
+| `modules/create-tgw-vpc-attachment/variables.tf` — private_route_table_ids, tgw_supernet_cidr | Complete |
+| All modules pass `terraform validate` | Complete |
+| `tgw-vpc-atts` directory passes `tflint` (zero warnings) | Complete |
 | Apply to AWS (terraform apply) | Not started |
-| Add VPC routes to TGW (10.0.0.0/8) in VPC module | Not started — see Spec 03 |
+| Test inter-VPC connectivity through TGW | Not started |
 
 ---
 
 ## Next Steps
 
-1. Run `terraform apply` in `envs/networking/euw2/tgw-vpc-atts/` with `-var target_environment=dev` to create the dev cell1000 attachment.
-2. Implement VPC-side routes to TGW for inter-VPC traffic (10.0.0.0/8 destination, private subnets only) — tracked in a forthcoming Spec 03.
-3. Test inter-VPC connectivity through TGW.
+1. Run `terraform apply` in `envs/networking/euw2/tgw-vpc-atts/` with `-var target_environment=dev` to create the dev cell1000 attachment and VPC-side routes.
+2. Test inter-VPC connectivity through TGW between cells.
+3. When prod cells are deployed, run `terraform apply` with `-var target_environment=prod`.
