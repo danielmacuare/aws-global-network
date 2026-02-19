@@ -8,7 +8,7 @@ The VPC module and environment outputs were also extended with simplified scalar
 
 The `modules/create-tgw-vpc-attachment` module was extended to include VPC-side routes (`aws_route.tgw`) that add a 10.0.0.0/8 supernet route to each private subnet route table, routing east-west traffic through the TGW.
 
-**Status**: Fully implemented and merged to `feature/inter-vpc-routing`. Not yet applied to AWS.
+**Status**: Complete. All changes applied to AWS. Inter-VPC routing is working.
 
 ---
 
@@ -249,6 +249,51 @@ Added two new optional variables to support the VPC-side routes:
 
 ---
 
+### `modules/security/nacls.tf`
+
+Added two NACL rules to allow inter-VPC traffic through the TGW:
+
+1. **Public NACL inbound ephemeral rule (rule 150)**: Allows return TCP traffic (ports 1024-65535) from the `10.0.0.0/8` supernet, supporting established connections (e.g. SSH responses) from private subnets in other cells.
+
+2. **Private NACL inbound env-supernet rule (rule 110)**: Conditionally allows all inbound traffic from `var.env_supernet_cidr` (e.g. `10.1.0.0/16` for euw2-dev), enabling cross-cell traffic arriving via TGW. Created with `count = var.env_supernet_cidr != "" ? 1 : 0` so it is only added when the variable is set.
+
+**File**: `modules/security/nacls.tf`
+
+---
+
+### `modules/security/security-groups.tf`
+
+Added a dynamic `ingress` block to the `private` security group that allows all traffic (`protocol = "-1"`) from `var.env_supernet_cidr` when that variable is non-empty. This permits cross-cell traffic arriving via TGW to reach private instances:
+
+```hcl
+dynamic "ingress" {
+  for_each = var.env_supernet_cidr != "" ? [var.env_supernet_cidr] : []
+  content {
+    description = "All traffic from same-environment cells via TGW"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [ingress.value]
+  }
+}
+```
+
+**File**: `modules/security/security-groups.tf`
+
+---
+
+### `modules/security/variables.tf`
+
+Added one new optional variable:
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `env_supernet_cidr` | `string` | `""` | Environment-level supernet CIDR (e.g. `10.1.0.0/16` for euw2-dev) allowed to communicate with private instances across cells via TGW. |
+
+**File**: `modules/security/variables.tf`
+
+---
+
 ## Architecture
 
 ```
@@ -317,15 +362,18 @@ dev = {
 | `envs/networking/euw2/tgw-vpc-atts/outputs.tf` — updated outputs | Complete |
 | `modules/create-tgw-vpc-attachment/vpc-attachment.tf` — aws_route.tgw VPC-side routes | Complete |
 | `modules/create-tgw-vpc-attachment/variables.tf` — private_route_table_ids, tgw_supernet_cidr | Complete |
+| `modules/security/nacls.tf` — ephemeral + env-supernet inbound rules | Complete |
+| `modules/security/security-groups.tf` — dynamic ingress for env_supernet_cidr | Complete |
+| `modules/security/variables.tf` — env_supernet_cidr variable | Complete |
 | All modules pass `terraform validate` | Complete |
 | `tgw-vpc-atts` directory passes `tflint` (zero warnings) | Complete |
-| Apply to AWS (terraform apply) | Not started |
-| Test inter-VPC connectivity through TGW | Not started |
+| Apply to AWS (terraform apply) | Complete |
+| Test inter-VPC connectivity through TGW | Complete |
 
 ---
 
 ## Next Steps
 
-1. Run `terraform apply` in `envs/networking/euw2/tgw-vpc-atts/` with `-var target_environment=dev` to create the dev cell1000 attachment and VPC-side routes.
-2. Test inter-VPC connectivity through TGW between cells.
-3. When prod cells are deployed, run `terraform apply` with `-var target_environment=prod`.
+All items complete. Inter-VPC routing between cell1000 and cell1001 via TGW is working in AWS.
+
+When prod cells are deployed, run `terraform apply` with `-var target_environment=prod` in `envs/networking/euw2/tgw-vpc-atts/` to attach prod VPCs.
