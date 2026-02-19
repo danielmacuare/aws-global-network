@@ -8,4 +8,7 @@ module "security" {
 
   public_subnet_ids  = [for k, v in module.vpc-main.public_subnets : v.id]
   private_subnet_ids = [for k, v in module.vpc-main.private_subnets : v.id]
+
+  # Allow all dev euw2 cells (10.1.0.0/16) to communicate via TGW
+  env_supernet_cidr = "10.1.0.0/16"
 }
