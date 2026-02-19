@@ -10,9 +10,9 @@ locals {
       cell1000 = {
         state_key = "env-dev/euw2/cell1000/terraform.tfstate"
       }
-      # cell0001 = {
-      #   state_key = "env-dev/euw2/cell0001/terraform.tfstate"
-      # }  # TODO: Uncomment when cell0001 VPC is created
+      cell1001 = {
+        state_key = "env-dev/euw2/cell1001/terraform.tfstate"
+      }
     }
     # Production environment cells
     prod = {
