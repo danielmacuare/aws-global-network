@@ -21,6 +21,9 @@ module "vpc_attachments" {
   region_short = local.region_short
   vpc_name     = try(data.terraform_remote_state.vpc_states[each.key].outputs.vpc.name, "main")
 
+  private_route_table_ids = data.terraform_remote_state.vpc_states[each.key].outputs.private_route_tables_id
+  tgw_supernet_cidr       = local.tgw_supernet_cidr
+
   default_tags = merge(local.default_tags, {
     cell = each.key
   })

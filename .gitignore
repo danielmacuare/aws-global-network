@@ -43,5 +43,4 @@ ssh-keys/
 # Ignore all Markdown files except README.md
 #*.md
 !**/README.md
-specs/
 

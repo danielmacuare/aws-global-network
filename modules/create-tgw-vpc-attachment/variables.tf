@@ -49,3 +49,15 @@ variable "appliance_mode_support" {
   type        = string
   default     = "disable"
 }
+
+variable "private_route_table_ids" {
+  description = "Map of private route table IDs (key → rtb-id) to add a TGW supernet route to. Required for VPC instances to send east-west traffic through the TGW."
+  type        = map(string)
+  default     = {}
+}
+
+variable "tgw_supernet_cidr" {
+  description = "Supernet CIDR routed to the TGW from each private subnet route table (e.g. 10.0.0.0/8 covers all cells across all regions)."
+  type        = string
+  default     = "10.0.0.0/8"
+}
