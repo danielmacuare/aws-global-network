@@ -59,6 +59,18 @@ resource "aws_security_group" "private" {
     security_groups = [aws_security_group.bastion.id]
   }
 
+  # All traffic from other cells in the same environment via TGW
+  dynamic "ingress" {
+    for_each = var.env_supernet_cidr != "" ? [var.env_supernet_cidr] : []
+    content {
+      description = "All traffic from same-environment cells via TGW"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
   # All TCP Outbound
   egress {
     description = "All TCP outbound"
