@@ -78,3 +78,28 @@ output "public_subnet_ids" {
   value       = module.vpc-main.public_subnet_ids
   description = "List of public subnet IDs (convenience output for remote state)"
 }
+
+# ==============================================================================
+# Instance Inventory Outputs
+# ==============================================================================
+# Used by scripts/deploy.sh after deployment to display SSH access details.
+# ==============================================================================
+
+output "instances" {
+  description = "EC2 instance names and their IPs for SSH access"
+  value = {
+    bastions = {
+      for k, ip in module.ec2.bastion_public_ips :
+      format("bastion-%s-%s-%s", local.region_short, local.environment, k) => ip
+    }
+    private_hosts = {
+      for k, ip in module.ec2.private_instance_private_ips :
+      format("private-%s-%s-%s", local.region_short, local.environment, k) => ip
+    }
+  }
+}
+
+output "ssh_key_path" {
+  description = "Local path to the SSH private key for this cell"
+  value       = module.key_pair.private_key_path
+}
