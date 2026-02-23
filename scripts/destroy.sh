@@ -18,6 +18,7 @@
 #   Phase 2 (parallel)  : TGW-VPC Attachments      — one job per region
 #   Wait                : 30 s for TGW propagation
 #   Phase 3 (parallel)  : All regional TGWs + all VPC cells
+#   Phase 4 (parallel)  : SSH Key Pairs             — destroyed last (created first)
 #
 # Requirements: bash 4.0+, terraform on $PATH, AWS credentials configured.
 # Run from repository root (the script enforces this).
@@ -223,9 +224,28 @@ discover_vpc_cells() {
       region_included "$region" || continue
       for cell_dir in "${region_dir}"*/; do
         [[ -d "$cell_dir" ]] || continue
+        [[ "$(basename "$cell_dir")" == "keypair" ]] && continue
         ls "${cell_dir}"*.tf >/dev/null 2>&1 || continue
         echo "envs/${env}/${region}/$(basename "$cell_dir")"
       done
+    done
+  done
+}
+
+# Discovers dedicated key pair environments: envs/{dev,prod}/<region>/keypair/
+discover_keypairs() {
+  local env region region_dir keypair_dir
+  for env in "${ENVIRONMENTS[@]}"; do
+    local env_dir="${REPO_ROOT}/envs/${env}"
+    [[ -d "$env_dir" ]] || continue
+    for region_dir in "${env_dir}"/*/; do
+      [[ -d "$region_dir" ]] || continue
+      region="$(basename "$region_dir")"
+      region_included "$region" || continue
+      keypair_dir="${region_dir}keypair"
+      [[ -d "$keypair_dir" ]] || continue
+      ls "${keypair_dir}"/*.tf >/dev/null 2>&1 || continue
+      echo "envs/${env}/${region}/keypair"
     done
   done
 }
@@ -283,14 +303,15 @@ main() {
   log_info "Skip peering : ${SKIP_PEERING}"
 
   # ── Discover all targets ────────────────────────────────────────────────────
+  mapfile -t KEYPAIRS    < <(discover_keypairs)
   mapfile -t VPC_CELLS   < <(discover_vpc_cells)
   mapfile -t TGWS        < <(discover_tgws)
   mapfile -t TGW_ATTS    < <(discover_tgw_vpc_atts)
   mapfile -t TGW_PEERING < <(discover_tgw_peering)
 
-  log_info "Found: ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
+  log_info "Found: ${#KEYPAIRS[@]} key pair env(s) | ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
 
-  if [[ ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
+  if [[ ${#KEYPAIRS[@]} -eq 0 && ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
     log_warn "Nothing to destroy. Check --environment and --regions filters."
     exit 0
   fi
@@ -342,6 +363,20 @@ main() {
 
   wait_for_jobs "Phase 3"
   log_success "Phase 3 complete."
+
+  # ── Phase 4: SSH Key Pairs (parallel) — destroyed last ─────────────────────
+  if [[ ${#KEYPAIRS[@]} -gt 0 ]]; then
+    log_phase "Phase 4 — SSH Key Pairs (parallel — destroyed last)"
+
+    local dir
+    for dir in "${KEYPAIRS[@]}"; do
+      run_terraform "$dir" &
+      JOB_MAP[$!]="$dir"
+    done
+
+    wait_for_jobs "Phase 4"
+    log_success "Phase 4 complete."
+  fi
 
   # ── Done ───────────────────────────────────────────────────────────────────
   log_phase "Teardown Complete"
