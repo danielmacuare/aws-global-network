@@ -14,7 +14,9 @@
 #   -h, --help          Show this help message
 #
 # Deployment phases:
-#   Phase 1 (parallel) : All VPC cells  +  all regional TGWs
+#   Phase 0 (parallel) : Key pair environments (envs/{dev,prod}/<region>/keypair/)
+#   Phase 1 (parallel) : All regional TGWs + VPC cells grouped by env/region
+#                        (cells within each group deploy sequentially)
 #   Wait               : 30 s for TGW propagation
 #   Phase 2 (parallel) : TGW-VPC Attachments (one job per region)
 #   Phase 3 (sequential): TGW Peering Attachments
@@ -270,9 +272,28 @@ discover_vpc_cells() {
       region_included "$region" || continue
       for cell_dir in "${region_dir}"*/; do
         [[ -d "$cell_dir" ]] || continue
+        [[ "$(basename "$cell_dir")" == "keypair" ]] && continue
         ls "${cell_dir}"*.tf >/dev/null 2>&1 || continue
         echo "envs/${env}/${region}/$(basename "$cell_dir")"
       done
+    done
+  done
+}
+
+# Discovers dedicated key pair environments: envs/{dev,prod}/<region>/keypair/
+discover_keypairs() {
+  local env region region_dir keypair_dir
+  for env in "${ENVIRONMENTS[@]}"; do
+    local env_dir="${REPO_ROOT}/envs/${env}"
+    [[ -d "$env_dir" ]] || continue
+    for region_dir in "${env_dir}"/*/; do
+      [[ -d "$region_dir" ]] || continue
+      region="$(basename "$region_dir")"
+      region_included "$region" || continue
+      keypair_dir="${region_dir}keypair"
+      [[ -d "$keypair_dir" ]] || continue
+      ls "${keypair_dir}"/*.tf >/dev/null 2>&1 || continue
+      echo "envs/${env}/${region}/keypair"
     done
   done
 }
@@ -330,25 +351,62 @@ main() {
   log_info "Skip peering : ${SKIP_PEERING}"
 
   # ── Discover all deployment targets ────────────────────────────────────────
+  mapfile -t KEYPAIRS    < <(discover_keypairs)
   mapfile -t VPC_CELLS   < <(discover_vpc_cells)
   mapfile -t TGWS        < <(discover_tgws)
   mapfile -t TGW_ATTS    < <(discover_tgw_vpc_atts)
   mapfile -t TGW_PEERING < <(discover_tgw_peering)
 
-  log_info "Found: ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
+  log_info "Found: ${#KEYPAIRS[@]} key pair env(s) | ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
 
-  if [[ ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
+  if [[ ${#KEYPAIRS[@]} -eq 0 && ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
     log_warn "Nothing to deploy. Check --environment and --regions filters."
     exit 0
   fi
 
-  # ── Phase 1: VPCs + TGWs in parallel ───────────────────────────────────────
-  log_phase "Phase 1 — VPCs + TGWs (parallel)"
+  # ── Phase 0: Key pair environments (parallel across regions) ───────────────
+  if [[ ${#KEYPAIRS[@]} -gt 0 ]]; then
+    log_phase "Phase 0 — SSH Key Pairs (parallel across regions)"
 
+    local dir
+    for dir in "${KEYPAIRS[@]}"; do
+      run_terraform "$dir" &
+      JOB_MAP[$!]="$dir"
+    done
+
+    wait_for_jobs "Phase 0"
+    log_success "Phase 0 complete."
+  fi
+
+  # ── Phase 1: VPCs + TGWs ────────────────────────────────────────────────────
+  # TGWs run in parallel. VPC cells are grouped by env/region and run
+  # sequentially within each group (to respect key pair creation order),
+  # but groups themselves run in parallel across regions/environments.
+  log_phase "Phase 1 — VPCs + TGWs (cells sequential within env/region)"
+
+  # TGWs start immediately in parallel
   local dir
-  for dir in "${VPC_CELLS[@]}" "${TGWS[@]}"; do
+  for dir in "${TGWS[@]}"; do
     run_terraform "$dir" &
     JOB_MAP[$!]="$dir"
+  done
+
+  # Group cells by env/region key (e.g. envs/dev/euw2)
+  declare -A CELL_GROUPS=()
+  local cell group_key
+  for cell in "${VPC_CELLS[@]}"; do
+    group_key="$(echo "$cell" | cut -d/ -f1-3)"
+    CELL_GROUPS["$group_key"]+="$cell "
+  done
+
+  # Each group runs as a single background job; cells within the group are sequential
+  for group_key in "${!CELL_GROUPS[@]}"; do
+    (
+      for cell in $(echo "${CELL_GROUPS[$group_key]}" | tr ' ' '\n' | sort); do
+        run_terraform "$cell"
+      done
+    ) &
+    JOB_MAP[$!]="$group_key"
   done
 
   wait_for_jobs "Phase 1"
