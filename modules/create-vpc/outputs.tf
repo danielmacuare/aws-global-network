@@ -14,8 +14,14 @@
 # ==============================================================================
 
 output "vpc" {
-  description = "VPC"
-  value       = aws_vpc.this
+  description = "VPC details including resource attributes, name, and environment"
+  value = merge(
+    { for k, v in aws_vpc.this : k => v },
+    {
+      name        = var.vpc_name
+      environment = var.environment
+    }
+  )
 }
 
 output "private_subnets" {
@@ -67,3 +73,4 @@ output "public_subnet_ids" {
   description = "List of public subnet IDs"
   value       = [for k, v in aws_subnet.public : v.id]
 }
+

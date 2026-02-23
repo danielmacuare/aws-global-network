@@ -27,3 +27,15 @@ resource "aws_ec2_transit_gateway_route_table_propagation" "this" {
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.this.id
   transit_gateway_route_table_id = var.transit_gateway_route_table_id
 }
+
+# VPC-side route: send the TGW supernet from each private subnet route table
+# to the TGW, enabling east-west traffic between cells and regions.
+resource "aws_route" "tgw" {
+  for_each = var.private_route_table_ids
+
+  route_table_id         = each.value
+  destination_cidr_block = var.tgw_supernet_cidr
+  transit_gateway_id     = var.transit_gateway_id
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment.this]
+}
