@@ -16,8 +16,8 @@ locals {
     }
     # Production environment cells
     prod = {
-      cell1000 = {
-        state_key = "env-prod/euw2/cell1000/terraform.tfstate"
+      cell0000 = {
+        state_key = "env-prod/euw2/cell0000/terraform.tfstate"
       }
       cell0001 = {
         state_key = "env-prod/euw2/cell0001/terraform.tfstate"
