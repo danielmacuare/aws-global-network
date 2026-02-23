@@ -2,18 +2,19 @@
 data "terraform_remote_state" "tgw" {
   backend = "s3"
   config = {
-    bucket = "dmac-bootstrap-tfstate"
+    bucket = var.backend_bucket
     key    = "env-networking/euw2-tgw/terraform.tfstate"
-    region = "eu-west-2"
+    region = local.region
   }
 }
 
-# Read Dev VPC state
-data "terraform_remote_state" "dev_vpc" {
-  backend = "s3"
+# Dynamic VPC state data sources for each cell
+data "terraform_remote_state" "vpc_states" {
+  for_each = local.cell_mappings[local.current_environment]
+  backend  = "s3"
   config = {
-    bucket = "dmac-bootstrap-tfstate"
-    key    = "env-dev/euw2/terraform.tfstate"
-    region = "eu-west-2"
+    bucket = var.backend_bucket
+    key    = each.value.state_key
+    region = local.region
   }
 }

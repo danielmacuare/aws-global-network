@@ -3,7 +3,7 @@
 # ==============================================================================
 # These outputs provide structured objects with multiple attributes per resource.
 #
-# Use case: Internal consumption within this environment (envs/dev/euw2/cell1000/)
+# Use case: Internal consumption within this environment (envs/dev/euw2/cell1001/)
 # - Used by ec2s.tf and security.tf for rich attribute access
 # - Provides full context (IDs, CIDR blocks, name, environment) in a single output
 # - Ideal when consumers need multiple attributes from the same resource
@@ -101,5 +101,5 @@ output "instances" {
 
 output "ssh_key_path" {
   description = "Local path to the SSH private key for this cell"
-  value       = module.key_pair.private_key_path
+  value       = "${local.project_root}/ssh-keys/${local.region_short}-${local.environment}.pem"
 }
