@@ -196,7 +196,7 @@ module "key_pair" {
 - **AMI**: Ubuntu 24.04 LTS (Noble Numbat) with gp3 storage
   - Owner: Canonical (099720109477)
   - Pattern: `ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*`
-- **Naming**: `{subnet-key}-{region_short}-{environment}-{vpc_name}`
+- **Naming**: `{type}-{region_short}-{environment}-{subnet_key}-{cell_name}` (e.g., `bastion-euw2-prod-pub-0-cell0000`)
 - **Security Groups**: Optional with fallback to VPC default
   - Allows module testing without custom security groups
   - Uses conditional logic: `var.sg_id != null ? [var.sg_id] : [data.aws_security_group.default.id]`
@@ -584,7 +584,7 @@ modules/security/
 - **Stateless NACLs**: Explicit egress rules required for return traffic
 - **Security Group References**: Private SG allows all traffic from bastion SG (not CIDR-based)
 - **ICMP Support**: Both IPv4 (icmp) and IPv6 (protocol 58) enabled for connectivity testing
-- **Naming Convention**: `sg-{type}-{region_short}-{environment}` and `nacl-{type}-{region_short}-{environment}`
+- **Naming Convention**: `sg-{type}-{region_short}-{environment}-{cell_name}` and `nacl-{type}-{region_short}-{environment}-{cell_name}`
 
 ---
 
