@@ -550,7 +550,7 @@ main() {
 
   # ── Done ───────────────────────────────────────────────────────────────────
   rm -rf "$TIMING_DIR"
-  log_phase "Deployment Complete"
+  log_phase "Deployment Completed"
   log_success "All phases finished. Logs: ${LOG_DIR}"
 }
 
