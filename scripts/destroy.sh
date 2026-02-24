@@ -491,7 +491,7 @@ main() {
 
   # ── Done ───────────────────────────────────────────────────────────────────
   rm -rf "$TIMING_DIR"
-  log_phase "Teardown Complete"
+  log_phase "Destroy Completed"
   log_success "All phases finished. Logs: ${LOG_DIR}"
 }
 
