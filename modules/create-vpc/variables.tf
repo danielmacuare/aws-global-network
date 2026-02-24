@@ -25,6 +25,11 @@ variable "vpc_name" {
   description = "Name of the VPC"
 }
 
+variable "cell_name" {
+  type        = string
+  description = "Cell name for resource identification (e.g. cell1000)"
+}
+
 ## Required
 variable "vpc_cidr" {
   type        = string

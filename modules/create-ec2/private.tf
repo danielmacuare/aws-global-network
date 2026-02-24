@@ -18,7 +18,7 @@ resource "aws_instance" "private" {
   tags = merge(
     var.default_tags,
     {
-      Name = format("private-%s-%s-%s", var.region_short, var.environment, each.key)
+      Name = format("private-%s-%s-%s-%s", var.region_short, var.environment, each.key, var.cell_name)
       type = "application"
     }
   )

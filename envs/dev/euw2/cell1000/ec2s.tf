@@ -5,6 +5,7 @@ module "ec2" {
   environment  = local.environment
   vpc_id       = module.vpc-main.vpc.id
   vpc_name     = local.vpc_name # Dynamic from locals
+  cell_name    = local.cell_name
   default_tags = local.default_tags
 
   public_subnets  = module.vpc-main.public_subnets

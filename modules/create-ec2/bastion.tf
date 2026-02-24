@@ -18,7 +18,7 @@ resource "aws_instance" "bastion" {
   tags = merge(
     var.default_tags,
     {
-      Name = format("bastion-%s-%s-%s", var.region_short, var.environment, each.key)
+      Name = format("bastion-%s-%s-%s-%s", var.region_short, var.environment, each.key, var.cell_name)
       type = "bastion"
     }
   )

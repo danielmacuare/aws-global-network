@@ -4,7 +4,7 @@ resource "aws_network_acl" "public" {
   subnet_ids = var.public_subnet_ids
 
   tags = merge(var.default_tags, {
-    Name = format("nacl-public-%s-%s", var.region_short, var.environment)
+    Name = format("nacl-public-%s-%s-%s", var.region_short, var.environment, var.cell_name)
     type = "public-nacl"
   })
 }
@@ -15,7 +15,7 @@ resource "aws_network_acl" "private" {
   subnet_ids = var.private_subnet_ids
 
   tags = merge(var.default_tags, {
-    Name = format("nacl-private-%s-%s", var.region_short, var.environment)
+    Name = format("nacl-private-%s-%s-%s", var.region_short, var.environment, var.cell_name)
     type = "private-nacl"
   })
 }
