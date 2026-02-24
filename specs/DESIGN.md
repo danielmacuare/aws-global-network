@@ -62,6 +62,62 @@ usw2: 64517
 
 
 
-## State files
-- One State file for VPCs and EC2
-- Another State file for 
+## Naming Convention
+
+All AWS resources follow a consistent naming pattern for the `Name` tag to enable easy identification in the AWS Console, especially when multiple cells coexist in the same region.
+
+### General Pattern
+
+```
+{resource_shortname}-{region_short}-{environment}-{optional_info}-{cell_name}
+```
+
+- `resource_shortname`: Short identifier for the resource type (see table below)
+- `region_short`: AWS region short code (euw2, euw1, usw2, etc.)
+- `environment`: Environment name (prod, dev)
+- `optional_info`: Context-specific info like subnet key (pub-0, priv-1, etc.)
+- `cell_name`: The cell identifier (cell0000, cell1000, etc.)
+
+### Cell-Scoped Resources
+
+These resources belong to a specific VPC/cell and include `cell_name` in their Name tag:
+
+| Resource | Shortname | Name Pattern | Example |
+|----------|-----------|-------------|---------|
+| VPC | vpc | `vpc-{region_short}-{env}-{cell}` | vpc-euw2-prod-cell0000 |
+| Internet Gateway | igw | `igw-{region_short}-{env}-{cell}` | igw-euw2-dev-cell1000 |
+| Egress-only IPv6 IGW | egipv6-igw | `egipv6-igw-{region_short}-{env}-{cell}` | egipv6-igw-euw2-dev-cell1000 |
+| NAT Gateway | ngw | `ngw-{region_short}-{env}-{cell}` | ngw-euw2-prod-cell0000 |
+| Subnet | sub | `sub-{region_short}-{env}-{subnet_key}-{cell}` | sub-euw2-dev-priv-2-cell1000 |
+| Route Table | rtb | `rtb-{region_short}-{env}-{subnet_key}-{cell}` | rtb-euw2-dev-priv-2-cell1000 |
+| Bastion EC2 | bastion | `bastion-{region_short}-{env}-{subnet_key}-{cell}` | bastion-euw2-prod-pub-0-cell0000 |
+| Private EC2 | private | `private-{region_short}-{env}-{subnet_key}-{cell}` | private-euw2-prod-priv-1-cell0000 |
+| Bastion Security Group | sg-bastion | `sg-bastion-{region_short}-{env}-{cell}` | sg-bastion-euw2-dev-cell1000 |
+| Private Security Group | sg-private | `sg-private-{region_short}-{env}-{cell}` | sg-private-euw2-dev-cell1000 |
+| Public NACL | nacl-public | `nacl-public-{region_short}-{env}-{cell}` | nacl-public-euw2-prod-cell0000 |
+| Private NACL | nacl-private | `nacl-private-{region_short}-{env}-{cell}` | nacl-private-euw2-prod-cell0000 |
+
+### Singleton/Shared Resources (no cell_name)
+
+Resources that are shared across cells or are region-wide singletons do NOT include `cell_name`:
+
+| Resource | Shortname | Name Pattern | Example |
+|----------|-----------|-------------|---------|
+| Transit Gateway | tgw | `tgw-{region_short}` | tgw-euw2 |
+| TGW Route Table | rt-tgw | `rt-tgw-{region_short}-{env}` | rt-tgw-euw2-dev |
+| TGW Attachment | tgw-att | `tgw-att-{region_short}-{env}-{vpc_name}` | tgw-att-euw2-dev-main |
+| Key Pair | kp | `kp-{region_short}-{env}` | kp-euw2-dev |
+
+### Rationale
+
+- Including `cell_name` in per-cell resources makes it possible to distinguish resources from different cells when viewing them in the same region in the AWS Console.
+- Singleton resources (TGW, key pairs) exist once per region or per region/environment, so `cell_name` would be redundant.
+- The pattern is consistent and sortable — resources group naturally by type, region, and environment in alphabetical listings.
+
+## State Files
+
+- Each VPC cell has its own state file: `env-{environment}/{region_short}/{cell_name}/terraform.tfstate`
+- TGW core has a separate state file: `env-networking/{region_short}-tgw/terraform.tfstate`
+- TGW VPC attachments have a separate state file: `env-networking/{region_short}-tgw-vpc-atts/terraform.tfstate`
+- Key pairs have a separate state file per environment/region: `env-{environment}/{region_short}/keypair/terraform.tfstate`
+- Cross-state references use `terraform_remote_state` data sources

@@ -143,6 +143,8 @@ run_terraform() {
   fi
 
   local rc=0
+  local t_start
+  t_start="$(date +%s)"
   if [[ "$DRY_RUN" == "true" ]]; then
     log_info "Planning destroy: ${rel_dir}"
     (
@@ -159,8 +161,16 @@ run_terraform() {
     ) || rc=$?
   fi
 
+  local t_end
+  t_end="$(date +%s)"
+
+  # Write timing to temp file so parent process can collect it
+  # (background jobs run in subshells and can't modify parent associative arrays)
+  local timing_file="${TIMING_DIR}/$(echo "$rel_dir" | tr '/' '_')"
+  echo "${t_start} ${t_end}" > "$timing_file"
+
   if [[ $rc -eq 0 ]]; then
-    log_success "Done: ${rel_dir}"
+    log_success "Done: ${rel_dir} ($(format_duration $((t_end - t_start))))"
   else
     log_error "FAILED: ${rel_dir} — see ${log_file}"
   fi
@@ -169,6 +179,37 @@ run_terraform() {
 
 # ── Job tracking ──────────────────────────────────────────────────────────────
 declare -A JOB_MAP=()
+
+# ── Timing ────────────────────────────────────────────────────────────────────
+declare -A TIMING_START=()
+declare -A TIMING_END=()
+declare -A PHASE_START=()
+declare -A PHASE_END=()
+DEPLOY_START=0
+TIMING_DIR=""
+
+# Formats seconds into human-readable duration (e.g. "2m 34s")
+format_duration() {
+  local secs="$1"
+  if [[ $secs -ge 60 ]]; then
+    printf "%dm %ds" $((secs / 60)) $((secs % 60))
+  else
+    printf "%ds" "$secs"
+  fi
+}
+
+# Reads timing temp files back into the TIMING_START/TIMING_END associative arrays.
+# Must be called in the parent process after wait_for_jobs.
+collect_timing() {
+  local f rel_dir t_start t_end
+  for f in "${TIMING_DIR}"/*; do
+    [[ -f "$f" ]] || continue
+    rel_dir="$(basename "$f" | tr '_' '/')"
+    read -r t_start t_end < "$f"
+    TIMING_START["$rel_dir"]="$t_start"
+    TIMING_END["$rel_dir"]="$t_end"
+  done
+}
 
 # Waits for all tracked background jobs; exits the script if any failed.
 wait_for_jobs() {
@@ -288,6 +329,58 @@ discover_tgw_peering() {
   return 0
 }
 
+# ── Timing summary ────────────────────────────────────────────────────────────
+print_timing_summary() {
+  log_phase "Teardown Timing Summary"
+
+  local total_duration=$(( DEPLOY_END - DEPLOY_START ))
+
+  # Collect and sort phase names (keys may contain spaces)
+  local sorted_phases=()
+  while IFS= read -r p; do
+    sorted_phases+=("$p")
+  done < <(printf '%s\n' "${!PHASE_START[@]}" | sort)
+
+  # Phase summary
+  echo -e "${BOLD}  Phase Durations${NC}"
+  echo -e "  ─────────────────────────────────────────────────────"
+  local phase
+  for phase in "${sorted_phases[@]}"; do
+    local p_dur=$(( PHASE_END[$phase] - PHASE_START[$phase] ))
+    printf "  %-45s %s\n" "$phase" "$(format_duration $p_dur)"
+  done
+  echo -e "  ─────────────────────────────────────────────────────"
+  printf "  ${BOLD}%-45s %s${NC}\n" "Total" "$(format_duration $total_duration)"
+  echo ""
+
+  # Collect and sort directory names
+  local sorted_dirs=()
+  while IFS= read -r d; do
+    sorted_dirs+=("$d")
+  done < <(printf '%s\n' "${!TIMING_START[@]}" | sort)
+
+  # Per-directory breakdown grouped by phase
+  for phase in "${sorted_phases[@]}"; do
+    echo -e "${BOLD}  ${phase} — Breakdown${NC}"
+    echo -e "  ─────────────────────────────────────────────────────"
+
+    local dir
+    for dir in "${sorted_dirs[@]}"; do
+      local d_start="${TIMING_START[$dir]}"
+      local d_end="${TIMING_END[$dir]}"
+      local p_start="${PHASE_START[$phase]}"
+      local p_end="${PHASE_END[$phase]}"
+
+      # Dir belongs to this phase if it started within the phase window
+      if [[ $d_start -ge $p_start && $d_start -le $p_end ]]; then
+        local d_dur=$(( d_end - d_start ))
+        printf "    %-43s %s\n" "$dir" "$(format_duration $d_dur)"
+      fi
+    done
+    echo ""
+  done
+}
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
   cd "$REPO_ROOT"
@@ -295,6 +388,8 @@ main() {
   rotate_logs
 
   log_phase "AWS Global Network — Parallel Teardown"
+  DEPLOY_START="$(date +%s)"
+  TIMING_DIR="$(mktemp -d)"
   log_info "Repo root    : ${REPO_ROOT}"
   log_info "Log dir      : ${LOG_DIR}"
   log_info "Environments : ${ENVIRONMENTS[*]}"
@@ -309,7 +404,7 @@ main() {
   mapfile -t TGW_ATTS    < <(discover_tgw_vpc_atts)
   mapfile -t TGW_PEERING < <(discover_tgw_peering)
 
-  log_info "Found: ${#KEYPAIRS[@]} key pair env(s) | ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
+  log_info "Found: SSH Key Pairs (${#KEYPAIRS[@]}) | VPC (${#VPC_CELLS[@]}) | TGW (${#TGWS[@]}) | TGW-VPC Atts (${#VPC_CELLS[@]}) | TGW PCX (${#TGW_PEERING[@]})"
 
   if [[ ${#KEYPAIRS[@]} -eq 0 && ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
     log_warn "Nothing to destroy. Check --environment and --regions filters."
@@ -318,13 +413,16 @@ main() {
 
   # ── Phase 1: TGW Peering Attachments (sequential) ──────────────────────────
   if [[ "$SKIP_PEERING" == "false" && ${#TGW_PEERING[@]} -gt 0 ]]; then
-    log_phase "Phase 1 — TGW Peering Attachments (sequential)"
+    log_phase "Phase 1 — TGW Peering Attachments"
+    PHASE_START["Phase 1 — TGW Peering"]="$(date +%s)"
 
     local dir
     for dir in "${TGW_PEERING[@]}"; do
       run_terraform "$dir"
     done
 
+    collect_timing
+    PHASE_END["Phase 1 — TGW Peering"]="$(date +%s)"
     log_success "Phase 1 complete."
   else
     log_warn "No TGW Peering directories found (or --skip-peering set) — skipping Phase 1."
@@ -332,7 +430,8 @@ main() {
 
   # ── Phase 2: TGW-VPC Attachments in parallel (one per region) ──────────────
   if [[ ${#TGW_ATTS[@]} -gt 0 ]]; then
-    log_phase "Phase 2 — TGW-VPC Attachments (parallel)"
+    log_phase "Phase 2 — TGW-VPC Attachments"
+    PHASE_START["Phase 2 — TGW-VPC Attachments"]="$(date +%s)"
 
     local dir
     for dir in "${TGW_ATTS[@]}"; do
@@ -341,6 +440,8 @@ main() {
     done
 
     wait_for_jobs "Phase 2"
+    collect_timing
+    PHASE_END["Phase 2 — TGW-VPC Attachments"]="$(date +%s)"
     log_success "Phase 2 complete."
   else
     log_warn "No TGW-VPC Attachment directories found — skipping Phase 2."
@@ -353,7 +454,8 @@ main() {
   fi
 
   # ── Phase 3: TGWs + VPCs in parallel ───────────────────────────────────────
-  log_phase "Phase 3 — TGWs + VPCs (parallel)"
+  log_phase "Phase 3 — TGWs + VPCs"
+  PHASE_START["Phase 3 — TGWs + VPCs"]="$(date +%s)"
 
   local dir
   for dir in "${TGWS[@]}" "${VPC_CELLS[@]}"; do
@@ -362,11 +464,14 @@ main() {
   done
 
   wait_for_jobs "Phase 3"
+  collect_timing
+  PHASE_END["Phase 3 — TGWs + VPCs"]="$(date +%s)"
   log_success "Phase 3 complete."
 
   # ── Phase 4: SSH Key Pairs (parallel) — destroyed last ─────────────────────
   if [[ ${#KEYPAIRS[@]} -gt 0 ]]; then
-    log_phase "Phase 4 — SSH Key Pairs (parallel — destroyed last)"
+    log_phase "Phase 4 — SSH Key Pairs"
+    PHASE_START["Phase 4 — SSH Key Pairs"]="$(date +%s)"
 
     local dir
     for dir in "${KEYPAIRS[@]}"; do
@@ -375,11 +480,18 @@ main() {
     done
 
     wait_for_jobs "Phase 4"
+    collect_timing
+    PHASE_END["Phase 4 — SSH Key Pairs"]="$(date +%s)"
     log_success "Phase 4 complete."
   fi
 
+  # ── Timing summary ──────────────────────────────────────────────────────────
+  DEPLOY_END="$(date +%s)"
+  print_timing_summary
+
   # ── Done ───────────────────────────────────────────────────────────────────
-  log_phase "Teardown Complete"
+  rm -rf "$TIMING_DIR"
+  log_phase "Destroy Completed"
   log_success "All phases finished. Logs: ${LOG_DIR}"
 }
 

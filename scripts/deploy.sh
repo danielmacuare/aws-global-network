@@ -15,8 +15,7 @@
 #
 # Deployment phases:
 #   Phase 0 (parallel) : Key pair environments (envs/{dev,prod}/<region>/keypair/)
-#   Phase 1 (parallel) : All regional TGWs + VPC cells grouped by env/region
-#                        (cells within each group deploy sequentially)
+#   Phase 1 (parallel) : All regional TGWs + all VPC cells (fully parallel)
 #   Wait               : 30 s for TGW propagation
 #   Phase 2 (parallel) : TGW-VPC Attachments (one job per region)
 #   Phase 3 (sequential): TGW Peering Attachments
@@ -144,6 +143,8 @@ run_terraform() {
   fi
 
   local rc=0
+  local t_start
+  t_start="$(date +%s)"
   if [[ "$DRY_RUN" == "true" ]]; then
     log_info "Planning: ${rel_dir}"
     (
@@ -160,16 +161,55 @@ run_terraform() {
     ) || rc=$?
   fi
 
+  local t_end
+  t_end="$(date +%s)"
+
+  # Write timing to temp file so parent process can collect it
+  # (background jobs run in subshells and can't modify parent associative arrays)
+  local timing_file="${TIMING_DIR}/$(echo "$rel_dir" | tr '/' '_')"
+  echo "${t_start} ${t_end}" > "$timing_file"
+
   if [[ $rc -eq 0 ]]; then
-    log_success "Done: ${rel_dir}"
+    log_success "Done: ${rel_dir} ($(format_duration $((t_end - t_start))))"
   else
     log_error "FAILED: ${rel_dir} — see ${log_file}"
   fi
   return $rc
 }
 
+# Reads timing temp files back into the TIMING_START/TIMING_END associative arrays.
+# Must be called in the parent process after wait_for_jobs.
+collect_timing() {
+  local f rel_dir t_start t_end
+  for f in "${TIMING_DIR}"/*; do
+    [[ -f "$f" ]] || continue
+    rel_dir="$(basename "$f" | tr '_' '/')"
+    read -r t_start t_end < "$f"
+    TIMING_START["$rel_dir"]="$t_start"
+    TIMING_END["$rel_dir"]="$t_end"
+  done
+}
+
 # ── Job tracking ──────────────────────────────────────────────────────────────
 declare -A JOB_MAP=()
+
+# ── Timing ────────────────────────────────────────────────────────────────────
+declare -A TIMING_START=()
+declare -A TIMING_END=()
+declare -A PHASE_START=()
+declare -A PHASE_END=()
+DEPLOY_START=0
+TIMING_DIR=""
+
+# Formats seconds into human-readable duration (e.g. "2m 34s")
+format_duration() {
+  local secs="$1"
+  if [[ $secs -ge 60 ]]; then
+    printf "%dm %ds" $((secs / 60)) $((secs % 60))
+  else
+    printf "%ds" "$secs"
+  fi
+}
 
 # Waits for all tracked background jobs; exits the script if any failed.
 wait_for_jobs() {
@@ -336,6 +376,58 @@ discover_tgw_peering() {
   return 0
 }
 
+# ── Timing summary ────────────────────────────────────────────────────────────
+print_timing_summary() {
+  log_phase "Deployment Timing Summary"
+
+  local total_duration=$(( DEPLOY_END - DEPLOY_START ))
+
+  # Collect and sort phase names (keys may contain spaces)
+  local sorted_phases=()
+  while IFS= read -r p; do
+    sorted_phases+=("$p")
+  done < <(printf '%s\n' "${!PHASE_START[@]}" | sort)
+
+  # Phase summary
+  echo -e "${BOLD}  Phase Durations${NC}"
+  echo -e "  ─────────────────────────────────────────────────────"
+  local phase
+  for phase in "${sorted_phases[@]}"; do
+    local p_dur=$(( PHASE_END[$phase] - PHASE_START[$phase] ))
+    printf "  %-45s %s\n" "$phase" "$(format_duration $p_dur)"
+  done
+  echo -e "  ─────────────────────────────────────────────────────"
+  printf "  ${BOLD}%-45s %s${NC}\n" "Total" "$(format_duration $total_duration)"
+  echo ""
+
+  # Collect and sort directory names
+  local sorted_dirs=()
+  while IFS= read -r d; do
+    sorted_dirs+=("$d")
+  done < <(printf '%s\n' "${!TIMING_START[@]}" | sort)
+
+  # Per-directory breakdown grouped by phase
+  for phase in "${sorted_phases[@]}"; do
+    echo -e "${BOLD}  ${phase} — Breakdown${NC}"
+    echo -e "  ─────────────────────────────────────────────────────"
+
+    local dir
+    for dir in "${sorted_dirs[@]}"; do
+      local d_start="${TIMING_START[$dir]}"
+      local d_end="${TIMING_END[$dir]}"
+      local p_start="${PHASE_START[$phase]}"
+      local p_end="${PHASE_END[$phase]}"
+
+      # Dir belongs to this phase if it started within the phase window
+      if [[ $d_start -ge $p_start && $d_start -le $p_end ]]; then
+        local d_dur=$(( d_end - d_start ))
+        printf "    %-43s %s\n" "$dir" "$(format_duration $d_dur)"
+      fi
+    done
+    echo ""
+  done
+}
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
   cd "$REPO_ROOT"
@@ -343,6 +435,8 @@ main() {
   rotate_logs
 
   log_phase "AWS Global Network — Parallel Deployment"
+  DEPLOY_START="$(date +%s)"
+  TIMING_DIR="$(mktemp -d)"
   log_info "Repo root    : ${REPO_ROOT}"
   log_info "Log dir      : ${LOG_DIR}"
   log_info "Environments : ${ENVIRONMENTS[*]}"
@@ -357,7 +451,7 @@ main() {
   mapfile -t TGW_ATTS    < <(discover_tgw_vpc_atts)
   mapfile -t TGW_PEERING < <(discover_tgw_peering)
 
-  log_info "Found: ${#KEYPAIRS[@]} key pair env(s) | ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
+  log_info "Found: SSH Key Pairs (${#KEYPAIRS[@]}) | VPC (${#VPC_CELLS[@]}) | TGW (${#TGWS[@]}) | TGW-VPC Atts (${#VPC_CELLS[@]}) | TGW PCX (${#TGW_PEERING[@]})"
 
   if [[ ${#KEYPAIRS[@]} -eq 0 && ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
     log_warn "Nothing to deploy. Check --environment and --regions filters."
@@ -366,7 +460,8 @@ main() {
 
   # ── Phase 0: Key pair environments (parallel across regions) ───────────────
   if [[ ${#KEYPAIRS[@]} -gt 0 ]]; then
-    log_phase "Phase 0 — SSH Key Pairs (parallel across regions)"
+    log_phase "Phase 0 — SSH Key Pairs"
+    PHASE_START["Phase 0 — SSH Key Pairs"]="$(date +%s)"
 
     local dir
     for dir in "${KEYPAIRS[@]}"; do
@@ -375,6 +470,8 @@ main() {
     done
 
     wait_for_jobs "Phase 0"
+    collect_timing
+    PHASE_END["Phase 0 — SSH Key Pairs"]="$(date +%s)"
     log_success "Phase 0 complete."
   fi
 
@@ -382,7 +479,8 @@ main() {
   # TGWs run in parallel. VPC cells are grouped by env/region and run
   # sequentially within each group (to respect key pair creation order),
   # but groups themselves run in parallel across regions/environments.
-  log_phase "Phase 1 — VPCs + TGWs (cells sequential within env/region)"
+  log_phase "Phase 1 — VPCs + TGWs"
+  PHASE_START["Phase 1 — VPCs + TGWs"]="$(date +%s)"
 
   # TGWs start immediately in parallel
   local dir
@@ -391,25 +489,16 @@ main() {
     JOB_MAP[$!]="$dir"
   done
 
-  # Group cells by env/region key (e.g. envs/dev/euw2)
-  declare -A CELL_GROUPS=()
-  local cell group_key
+  # All VPC cells deploy in parallel — keypairs are already created in Phase 0
+  local cell
   for cell in "${VPC_CELLS[@]}"; do
-    group_key="$(echo "$cell" | cut -d/ -f1-3)"
-    CELL_GROUPS["$group_key"]+="$cell "
-  done
-
-  # Each group runs as a single background job; cells within the group are sequential
-  for group_key in "${!CELL_GROUPS[@]}"; do
-    (
-      for cell in $(echo "${CELL_GROUPS[$group_key]}" | tr ' ' '\n' | sort); do
-        run_terraform "$cell"
-      done
-    ) &
-    JOB_MAP[$!]="$group_key"
+    run_terraform "$cell" &
+    JOB_MAP[$!]="$cell"
   done
 
   wait_for_jobs "Phase 1"
+  collect_timing
+  PHASE_END["Phase 1 — VPCs + TGWs"]="$(date +%s)"
   log_success "Phase 1 complete."
 
   # ── 30-second TGW stabilisation wait ───────────────────────────────────────
@@ -420,7 +509,8 @@ main() {
 
   # ── Phase 2: TGW-VPC Attachments in parallel (one per region) ──────────────
   if [[ ${#TGW_ATTS[@]} -gt 0 ]]; then
-    log_phase "Phase 2 — TGW-VPC Attachments (parallel)"
+    log_phase "Phase 2 — TGW-VPC Attachments"
+    PHASE_START["Phase 2 — TGW-VPC Attachments"]="$(date +%s)"
 
     for dir in "${TGW_ATTS[@]}"; do
       run_terraform "$dir" &
@@ -428,6 +518,8 @@ main() {
     done
 
     wait_for_jobs "Phase 2"
+    collect_timing
+    PHASE_END["Phase 2 — TGW-VPC Attachments"]="$(date +%s)"
     log_success "Phase 2 complete."
   else
     log_warn "No TGW-VPC Attachment directories found — skipping Phase 2."
@@ -435,13 +527,16 @@ main() {
 
   # ── Phase 3: TGW Peering Attachments (sequential) ──────────────────────────
   if [[ "$SKIP_PEERING" == "false" && ${#TGW_PEERING[@]} -gt 0 ]]; then
-    log_phase "Phase 3 — TGW Peering Attachments (sequential)"
+    log_phase "Phase 3 — TGW Peering Attachments"
+    PHASE_START["Phase 3 — TGW Peering"]="$(date +%s)"
 
     for dir in "${TGW_PEERING[@]}"; do
       run_terraform "$dir"
     done
 
     log_success "Phase 3 complete."
+    collect_timing
+    PHASE_END["Phase 3 — TGW Peering"]="$(date +%s)"
   else
     log_warn "No TGW Peering directories found (or --skip-peering set) — skipping Phase 3."
   fi
@@ -449,8 +544,13 @@ main() {
   # ── Instance inventory ─────────────────────────────────────────────────────
   print_instance_inventory
 
+  # ── Timing summary ──────────────────────────────────────────────────────────
+  DEPLOY_END="$(date +%s)"
+  print_timing_summary
+
   # ── Done ───────────────────────────────────────────────────────────────────
-  log_phase "Deployment Complete"
+  rm -rf "$TIMING_DIR"
+  log_phase "Deployment Completed"
   log_success "All phases finished. Logs: ${LOG_DIR}"
 }
 

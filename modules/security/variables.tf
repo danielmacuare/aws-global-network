@@ -38,3 +38,8 @@ variable "env_supernet_cidr" {
   description = "Environment-level supernet CIDR (e.g. 10.1.0.0/16 for euw2-dev) allowed to communicate with private instances across cells via TGW."
   default     = ""
 }
+
+variable "cell_name" {
+  type        = string
+  description = "Cell name for resource identification (e.g. cell1000)"
+}
