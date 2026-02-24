@@ -71,3 +71,8 @@ variable "private_instance_type" {
   description = "Instance type for private instances (t2.micro is free tier eligible)"
   default     = "t2.micro"
 }
+
+variable "cell_name" {
+  type        = string
+  description = "Cell name to append to instance names for identification (e.g. cell1000)"
+}

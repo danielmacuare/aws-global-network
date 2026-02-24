@@ -90,11 +90,11 @@ output "instances" {
   value = {
     bastions = {
       for k, ip in module.ec2.bastion_public_ips :
-      format("bastion-%s-%s-%s", local.region_short, local.environment, k) => ip
+      format("bastion-%s-%s-%s-%s", local.region_short, local.environment, k, local.cell_name) => ip
     }
     private_hosts = {
       for k, ip in module.ec2.private_instance_private_ips :
-      format("private-%s-%s-%s", local.region_short, local.environment, k) => ip
+      format("private-%s-%s-%s-%s", local.region_short, local.environment, k, local.cell_name) => ip
     }
   }
 }

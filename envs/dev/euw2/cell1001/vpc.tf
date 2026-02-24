@@ -5,6 +5,7 @@ module "vpc-main" {
   region_short = local.region_short
   environment  = local.environment
   vpc_name     = local.vpc_name # Dynamic from locals - includes cell name
+  cell_name    = local.cell_name
   vpc_cidr     = "10.1.16.0/20"
   default_tags = local.default_tags
 

@@ -28,15 +28,35 @@ tflint --recursive --config=$PROJECT_NAME/tools/.tflint.hcl
 
 ## Terraform Resources Naming Convention
 
-- We will use the following naming convention across this project for Name labels: `${resource_shortname}-${var.region_short}-${var.environment}-{optional_info}`
-  - Example: sub-euw2-dev-priv-2 (Private Subnet)
-  - Example: rt-euw2-dev-priv-2 (Private Ruting Table Subnet)
+- We will use the following naming convention across this project for Name labels: `${resource_shortname}-${var.region_short}-${var.environment}-{optional_info}-${cell_name}`
+  - Example: sub-euw2-dev-priv-2-cell1000 (Private Subnet)
+  - Example: rtb-euw2-dev-priv-2-cell1000 (Private Route Table)
+  - Example: bastion-euw2-prod-pub-0-cell0000 (Bastion EC2 Instance)
+  - Example: sg-bastion-euw2-dev-cell1000 (Bastion Security Group)
+
+- Singleton/shared resources (TGW, TGW route tables, TGW attachments, key pairs) do NOT include cell_name:
+  - Example: tgw-euw2 (Transit Gateway)
+  - Example: rt-tgw-euw2-dev (TGW Route Table)
+  - Example: kp-euw2-dev (Key Pair)
 
 ### Resource Shortnames
 
-- NAT Gateways: ngw
-- Subnets: sub
-- Routing Table: rt
+- VPC: vpc
+- Internet Gateway: igw
+- Egress-only IPv6 IGW: egipv6-igw
+- NAT Gateway: ngw
+- Subnet: sub
+- Route Table: rtb
+- Bastion EC2: bastion
+- Private EC2: private
+- Bastion Security Group: sg-bastion
+- Private Security Group: sg-private
+- Public NACL: nacl-public
+- Private NACL: nacl-private
+- Transit Gateway: tgw
+- TGW Route Table: rt-tgw
+- TGW Attachment: tgw-att
+- Key Pair: kp
 
 ## NEVER DO THE FOLLOWING
 

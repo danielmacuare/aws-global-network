@@ -4,6 +4,7 @@ module "security" {
   vpc_cidr     = module.vpc-main.vpc.cidr_block # From VPC module output
   region_short = local.region_short
   environment  = local.environment
+  cell_name    = local.cell_name
   default_tags = local.default_tags
 
   public_subnet_ids  = [for k, v in module.vpc-main.public_subnets : v.id]

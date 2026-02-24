@@ -36,7 +36,7 @@ All tags use **lowercase** keys with underscores for multi-word keys:
 | `environment` | Environment name | `"dev"`, `"prod"`, `"test"` | ✅ Yes |
 | `region` | AWS region | `"eu-west-2"` | ✅ Yes |
 | `region_short` | Short region code | `"euw2"` | ✅ Yes |
-| `name` | Resource-specific name | `"bastion-euw2-dev-pub-0"` | ✅ Yes |
+| `name` | Resource-specific name | `"bastion-euw2-dev-pub-0-cell1000"` | ✅ Yes |
 | `type` | Resource type classification | `"bastion"`, `"application"` | ✅ Yes |
 
 ### Name Tag Exception
@@ -46,7 +46,7 @@ All tags use **lowercase** keys with underscores for multi-word keys:
 - **Purpose**: Provides human-readable resource names in AWS Management Console
 - **Key Format**: Use PascalCase `Name` (not lowercase `name`)
 - **Usage**: Should be used alongside our standard lowercase tags
-- **Example**: `Name = "bastion-euw2-dev-pub-0"`
+- **Example**: `Name = "bastion-euw2-dev-pub-0-cell1000"`
 
 **Why this exception exists:**
 
@@ -61,7 +61,7 @@ All tags use **lowercase** keys with underscores for multi-word keys:
 tags = merge(
   var.default_tags,
   {
-    Name = format("bastion-%s-%s-%s", var.region_short, var.environment, each.key)  # PascalCase for GUI
+    Name = format("bastion-%s-%s-%s-%s", var.region_short, var.environment, each.key, var.cell_name)  # PascalCase for GUI
     type = "bastion"  # lowercase for our standard
   }
 )
@@ -143,7 +143,7 @@ resource "aws_instance" "example" {
   tags = merge(
     var.default_tags,
     {
-      name = format("bastion-%s-%s-%s", var.region_short, var.environment, each.key)
+      Name = format("bastion-%s-%s-%s-%s", var.region_short, var.environment, each.key, var.cell_name)
       type = "bastion"
     }
   )
@@ -174,7 +174,7 @@ variable "default_tags" {
 tags = merge(
   var.default_tags,
   {
-    name = format("resource-%s-%s-%s", var.region_short, var.environment, each.key)
+    Name = format("resource-%s-%s-%s-%s", var.region_short, var.environment, each.key, var.cell_name)
     type = "resource-type"
   }
 )
@@ -267,8 +267,8 @@ resource "aws_subnet" "public" {
   tags = merge(
     var.default_tags,
     {
-      name = format("sub-%s-%s-pub-%s", var.region_short, var.environment, each.key)
-      type = "public"
+      Name  = format("sub-%s-%s-${each.key}-%s", var.region_short, var.environment, var.cell_name)
+      scope = "public"
     }
   )
 }
@@ -295,12 +295,31 @@ resource "aws_subnet" "public" {
 
 ### Naming Conventions
 
-#### Resource Names
+#### Resource Names (Cell-Scoped)
 
-- **VPC**: `vpc-{region_short}-{environment}-{name}`
-- **Subnets**: `sub-{region_short}-{environment}-{type}-{number}`
-- **Instances**: `{type}-{region_short}-{environment}-{subnet}-{number}`
-- **Route Tables**: `rt-{region_short}-{environment}-{type}-{number}`
+Resources that belong to a specific VPC/cell include `{cell_name}` as the last segment:
+
+- **VPC**: `vpc-{region_short}-{environment}-{cell_name}`
+- **Subnets**: `sub-{region_short}-{environment}-{subnet_key}-{cell_name}`
+- **Route Tables**: `rtb-{region_short}-{environment}-{subnet_key}-{cell_name}`
+- **Bastion EC2**: `bastion-{region_short}-{environment}-{subnet_key}-{cell_name}`
+- **Private EC2**: `private-{region_short}-{environment}-{subnet_key}-{cell_name}`
+- **Internet Gateway**: `igw-{region_short}-{environment}-{cell_name}`
+- **Egress-only IPv6 IGW**: `egipv6-igw-{region_short}-{environment}-{cell_name}`
+- **NAT Gateway**: `ngw-{region_short}-{environment}-{cell_name}`
+- **Bastion Security Group**: `sg-bastion-{region_short}-{environment}-{cell_name}`
+- **Private Security Group**: `sg-private-{region_short}-{environment}-{cell_name}`
+- **Public NACL**: `nacl-public-{region_short}-{environment}-{cell_name}`
+- **Private NACL**: `nacl-private-{region_short}-{environment}-{cell_name}`
+
+#### Resource Names (Singleton/Shared — no cell_name)
+
+Resources that are shared across cells or are region-wide singletons:
+
+- **Transit Gateway**: `tgw-{region_short}`
+- **TGW Route Table**: `rt-tgw-{region_short}-{environment}`
+- **TGW Attachment**: `tgw-att-{region_short}-{environment}-{vpc_name}`
+- **Key Pair**: `kp-{region_short}-{environment}`
 
 #### Tag Values
 

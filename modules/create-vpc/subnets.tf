@@ -15,7 +15,7 @@ resource "aws_subnet" "private" {
   tags = merge(
     var.default_tags,
     {
-      Name  = format("sub-%s-%s-${each.key}", var.region_short, var.environment)
+      Name  = format("sub-%s-%s-${each.key}-%s", var.region_short, var.environment, var.cell_name)
       scope = "private"
     }
   )
@@ -37,7 +37,7 @@ resource "aws_subnet" "public" {
   tags = merge(
     var.default_tags,
     {
-      Name  = format("sub-%s-%s-${each.key}", var.region_short, var.environment)
+      Name  = format("sub-%s-%s-${each.key}-%s", var.region_short, var.environment, var.cell_name)
       scope = "public"
     }
   )
