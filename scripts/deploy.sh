@@ -451,7 +451,7 @@ main() {
   mapfile -t TGW_ATTS    < <(discover_tgw_vpc_atts)
   mapfile -t TGW_PEERING < <(discover_tgw_peering)
 
-  log_info "Found: ${#KEYPAIRS[@]} key pair env(s) | ${#VPC_CELLS[@]} VPC cell(s) | ${#TGWS[@]} TGW(s) | ${#TGW_ATTS[@]} attachment group(s) | ${#TGW_PEERING[@]} peering group(s)"
+  log_info "Found: SSH Key Pairs (${#KEYPAIRS[@]}) | VPC (${#VPC_CELLS[@]}) | TGW (${#TGWS[@]}) | TGW-VPC Atts (${#VPC_CELLS[@]}) | TGW PCX (${#TGW_PEERING[@]})"
 
   if [[ ${#KEYPAIRS[@]} -eq 0 && ${#VPC_CELLS[@]} -eq 0 && ${#TGWS[@]} -eq 0 ]]; then
     log_warn "Nothing to deploy. Check --environment and --regions filters."
@@ -460,7 +460,7 @@ main() {
 
   # ── Phase 0: Key pair environments (parallel across regions) ───────────────
   if [[ ${#KEYPAIRS[@]} -gt 0 ]]; then
-    log_phase "Phase 0 — SSH Key Pairs (parallel across regions)"
+    log_phase "Phase 0 — SSH Key Pairs"
     PHASE_START["Phase 0 — SSH Key Pairs"]="$(date +%s)"
 
     local dir
@@ -479,7 +479,7 @@ main() {
   # TGWs run in parallel. VPC cells are grouped by env/region and run
   # sequentially within each group (to respect key pair creation order),
   # but groups themselves run in parallel across regions/environments.
-  log_phase "Phase 1 — VPCs + TGWs (all parallel)"
+  log_phase "Phase 1 — VPCs + TGWs"
   PHASE_START["Phase 1 — VPCs + TGWs"]="$(date +%s)"
 
   # TGWs start immediately in parallel
@@ -509,7 +509,7 @@ main() {
 
   # ── Phase 2: TGW-VPC Attachments in parallel (one per region) ──────────────
   if [[ ${#TGW_ATTS[@]} -gt 0 ]]; then
-    log_phase "Phase 2 — TGW-VPC Attachments (parallel)"
+    log_phase "Phase 2 — TGW-VPC Attachments"
     PHASE_START["Phase 2 — TGW-VPC Attachments"]="$(date +%s)"
 
     for dir in "${TGW_ATTS[@]}"; do
@@ -527,7 +527,7 @@ main() {
 
   # ── Phase 3: TGW Peering Attachments (sequential) ──────────────────────────
   if [[ "$SKIP_PEERING" == "false" && ${#TGW_PEERING[@]} -gt 0 ]]; then
-    log_phase "Phase 3 — TGW Peering Attachments (sequential)"
+    log_phase "Phase 3 — TGW Peering Attachments"
     PHASE_START["Phase 3 — TGW Peering"]="$(date +%s)"
 
     for dir in "${TGW_PEERING[@]}"; do
