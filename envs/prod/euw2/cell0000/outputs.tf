@@ -101,5 +101,5 @@ output "instances" {
 
 output "ssh_key_path" {
   description = "Local path to the SSH private key for this cell"
-  value       = module.key_pair.private_key_path
+  value       = "${local.project_root}/ssh-keys/${local.region_short}-${local.environment}.pem"
 }

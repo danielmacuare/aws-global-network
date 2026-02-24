@@ -9,7 +9,7 @@ module "ec2" {
 
   public_subnets  = module.vpc-main.public_subnets
   private_subnets = module.vpc-main.private_subnets
-  key_pair_name   = module.key_pair.key_pair_name
+  key_pair_name   = data.aws_key_pair.this.key_name
 
   # Using custom security groups from security module
   public_security_group_id  = module.security.bastion_security_group_id
