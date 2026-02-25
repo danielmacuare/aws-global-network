@@ -12,4 +12,7 @@ module "security" {
 
   # Allow all prod euw2 cells (10.0.0.0/16) to communicate via TGW
   env_supernet_cidr = "10.0.0.0/16"
+
+  # Allow prod euw1 cells (10.16.0.0/16) via cross-region TGW peering
+  cross_region_supernet_cidr = "10.16.0.0/16"
 }

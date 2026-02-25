@@ -39,3 +39,17 @@ resource "aws_ec2_transit_gateway_route_table" "shared" {
     }
   )
 }
+
+resource "aws_ec2_transit_gateway_route_table" "wan" {
+  transit_gateway_id = aws_ec2_transit_gateway.this.id
+
+  tags = merge(
+    var.default_tags,
+    {
+      Name           = format("rt-tgw-%s-wan", var.region_short)
+      type           = "transit-gateway-route-table"
+      routing_policy = "wan"
+      environment    = "networking"
+    }
+  )
+}

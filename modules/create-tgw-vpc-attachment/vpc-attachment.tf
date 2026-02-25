@@ -28,6 +28,14 @@ resource "aws_ec2_transit_gateway_route_table_propagation" "this" {
   transit_gateway_route_table_id = var.transit_gateway_route_table_id
 }
 
+# Also propagate into the WAN route table so the peering attachment
+# (associated with rt-wan) can deliver inbound cross-region traffic.
+resource "aws_ec2_transit_gateway_route_table_propagation" "wan" {
+  count                          = var.transit_gateway_wan_route_table_id != null ? 1 : 0
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.this.id
+  transit_gateway_route_table_id = var.transit_gateway_wan_route_table_id
+}
+
 # VPC-side route: send the TGW supernet from each private subnet route table
 # to the TGW, enabling east-west traffic between cells and regions.
 resource "aws_route" "tgw" {
