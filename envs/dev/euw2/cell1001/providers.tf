@@ -22,9 +22,17 @@ terraform {
       source  = "hashicorp/null"
       version = ">= 3.0.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.9.0"
+    }
   }
 }
 
 provider "aws" {
+  region = local.region
+}
+
+provider "awscc" {
   region = local.region
 }
