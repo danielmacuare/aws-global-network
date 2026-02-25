@@ -138,6 +138,19 @@ resource "aws_network_acl_rule" "private_inbound_env_supernet" {
   to_port        = 0
 }
 
+# Allow all inbound from peer-region same-environment cells (cross-region TGW peering)
+resource "aws_network_acl_rule" "private_inbound_cross_region_supernet" {
+  count          = var.cross_region_supernet_cidr != "" ? 1 : 0
+  network_acl_id = aws_network_acl.private.id
+  rule_number    = 120
+  egress         = false
+  protocol       = "-1"
+  rule_action    = "allow"
+  cidr_block     = var.cross_region_supernet_cidr
+  from_port      = 0
+  to_port        = 0
+}
+
 # Private NACL Egress Rules
 resource "aws_network_acl_rule" "private_outbound_all" {
   network_acl_id = aws_network_acl.private.id

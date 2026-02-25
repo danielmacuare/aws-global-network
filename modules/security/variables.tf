@@ -39,6 +39,12 @@ variable "env_supernet_cidr" {
   default     = ""
 }
 
+variable "cross_region_supernet_cidr" {
+  type        = string
+  description = "Peer-region environment supernet CIDR for cross-region prod-to-prod or dev-to-dev traffic via TGW peering (e.g. 10.0.0.0/16 for euw2-prod when deploying euw1-prod)."
+  default     = ""
+}
+
 variable "cell_name" {
   type        = string
   description = "Cell name for resource identification (e.g. cell1000)"
