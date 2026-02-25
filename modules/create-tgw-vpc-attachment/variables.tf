@@ -61,3 +61,9 @@ variable "tgw_supernet_cidr" {
   type        = string
   default     = "10.0.0.0/8"
 }
+
+variable "transit_gateway_wan_route_table_id" {
+  description = "WAN route table ID to also propagate this attachment into. Required for inbound cross-region delivery via TGW peering. Leave null if peering is not used."
+  type        = string
+  default     = null
+}

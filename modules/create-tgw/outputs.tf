@@ -17,3 +17,8 @@ output "route_table_shared" {
   description = "Shared services route table resource object"
   value       = aws_ec2_transit_gateway_route_table.shared
 }
+
+output "route_table_wan" {
+  description = "WAN route table for TGW peering attachments"
+  value       = aws_ec2_transit_gateway_route_table.wan
+}
