@@ -11,8 +11,23 @@ resource "aws_internet_gateway" "this" {
 
 # Regional NAT Gateway with auto mode for high availability
 # Auto mode automatically manages IPs across AZs - no EIP needed
+#
+# time_sleep: The AWSCC Cloud Control API does not have the same retry/backoff
+# logic as the standard AWS provider. A freshly-created VPC may not have
+# propagated to all API endpoints by the time the NAT Gateway request fires,
+# causing a "VPC does not exist" 400 error. A 15-second buffer avoids this.
+resource "time_sleep" "wait_for_vpc" {
+  depends_on      = [aws_vpc.this]
+  create_duration = "10s"
+
+  triggers = {
+    vpc_id = aws_vpc.this.id
+  }
+}
+
 resource "awscc_ec2_nat_gateway" "this" {
-  vpc_id            = aws_vpc.this.id
+  # Reference VPC ID through time_sleep to enforce the wait
+  vpc_id            = time_sleep.wait_for_vpc.triggers["vpc_id"]
   connectivity_type = "public"
   availability_mode = "regional"
 
@@ -45,5 +60,5 @@ resource "awscc_ec2_nat_gateway" "this" {
     ]
   }
 
-  depends_on = [aws_internet_gateway.this]
+  depends_on = [aws_internet_gateway.this, time_sleep.wait_for_vpc]
 }
