@@ -15,7 +15,8 @@ resource "aws_internet_gateway" "this" {
 # time_sleep: The AWSCC Cloud Control API does not have the same retry/backoff
 # logic as the standard AWS provider. A freshly-created VPC may not have
 # propagated to all API endpoints by the time the NAT Gateway request fires,
-# causing a "VPC does not exist" 400 error. A 15-second buffer avoids this.
+# causing a "VPC does not exist" 400 error. A short buffer avoids this.
+# See docs/ngw-timeout.md for full details.
 resource "time_sleep" "wait_for_vpc" {
   depends_on      = [aws_vpc.this]
   create_duration = "10s"
