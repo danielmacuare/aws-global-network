@@ -149,14 +149,14 @@ run_terraform() {
     log_info "Planning: ${rel_dir}"
     (
       cd "$abs_dir"
-      terraform init -input=false >> "$log_file" 2>&1
+      terraform init -upgrade -input=false >> "$log_file" 2>&1
       terraform plan -input=false 2>&1 | tee -a "$log_file"
     ) || rc=$?
   else
     log_info "Deploying: ${rel_dir}"
     (
       cd "$abs_dir"
-      terraform init -input=false >> "$log_file" 2>&1
+      terraform init -upgrade -input=false >> "$log_file" 2>&1
       terraform apply -auto-approve -input=false >> "$log_file" 2>&1
     ) || rc=$?
   fi
