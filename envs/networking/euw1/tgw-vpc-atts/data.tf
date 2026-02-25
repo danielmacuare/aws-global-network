@@ -10,7 +10,7 @@ data "terraform_remote_state" "tgw" {
 
 # Dynamic VPC state data sources for each cell
 data "terraform_remote_state" "vpc_states" {
-  for_each = local.cell_mappings[local.current_environment]
+  for_each = local.cell_mappings
   backend  = "s3"
   config = {
     bucket = var.backend_bucket

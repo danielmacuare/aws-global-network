@@ -44,3 +44,8 @@ ssh-keys/
 #*.md
 !**/README.md
 
+# Python
+*.pyc
+__pycache__/
+uv.lock
+
