@@ -26,20 +26,6 @@ resource "aws_ec2_transit_gateway_route_table" "dev" {
   )
 }
 
-resource "aws_ec2_transit_gateway_route_table" "shared" {
-  transit_gateway_id = aws_ec2_transit_gateway.this.id
-
-  tags = merge(
-    var.default_tags,
-    {
-      Name           = format("rt-tgw-%s-shared", var.region_short)
-      type           = "transit-gateway-route-table"
-      routing_policy = "shared"
-      environment    = "shared"
-    }
-  )
-}
-
 resource "aws_ec2_transit_gateway_route_table" "wan" {
   transit_gateway_id = aws_ec2_transit_gateway.this.id
 
