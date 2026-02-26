@@ -13,11 +13,6 @@ output "route_table_dev" {
   value       = module.tgw.route_table_dev
 }
 
-output "route_table_shared" {
-  description = "Shared services route table"
-  value       = module.tgw.route_table_shared
-}
-
 output "route_table_wan" {
   description = "WAN route table for TGW peering attachments"
   value       = module.tgw.route_table_wan
