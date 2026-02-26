@@ -1,7 +1,6 @@
 
-
 ## Diagram
-![Diagram](.resources/tgw-multi-region.png)
+![Diagram](../resources/tgw-multi-region.png)
 
 
 ## Considerations
@@ -48,17 +47,22 @@ The allocation follows a hierarchical structure:
 
 euw2: 64514
 euw1: 64515
-usw1: 64516
-usw2: 64517
+usw1: 64517
+usw2: 64518
 
 
 ### TGW Route Tables
-- 3 Different Route Tables (prod, dev and shared)
-    - Prod cant' communicate with Dev and the other way around.
-    - Shared can communicate with both Prod and Dev.
-    - VPCs tagged with environment = dev will be attached to the dev routing table
-    - VPCs tagged with environment = prod will be attached to the prod routing table
-    - All VPCs will also be attached to the shared routing table.
+- 3 Route Tables per TGW: prod, dev, and wan.
+    - Prod can't communicate with Dev and the other way around.
+    - WAN is dedicated to TGW peering attachments (cross-region links).
+    - VPCs tagged with environment = dev will be attached to the dev routing table.
+    - VPCs tagged with environment = prod will be attached to the prod routing table.
+    - TGW peering attachments are associated with the wan routing table.
+
+### Cross-Region Routing
+- TGW peering attachments do not support route propagation — static routes are required.
+- Each region's prod, dev, and wan route tables have a static route pointing the remote region's /12 supernet through the peering attachment.
+- Prod-to-prod and dev-to-dev cross-region traffic is enabled. Prod-to-dev isolation is enforced by the VPC attachment associations (prod VPCs on the prod route table, dev VPCs on the dev route table).
 
 
 
@@ -72,7 +76,7 @@ All AWS resources follow a consistent naming pattern for the `Name` tag to enabl
 {resource_shortname}-{region_short}-{environment}-{optional_info}-{cell_name}
 ```
 
-- `resource_shortname`: Short identifier for the resource type (see table below)
+- `resource_shortname`: Short identifier for the resource type (see tables below)
 - `region_short`: AWS region short code (euw2, euw1, usw2, etc.)
 - `environment`: Environment name (prod, dev)
 - `optional_info`: Context-specific info like subnet key (pub-0, priv-1, etc.)
@@ -104,8 +108,9 @@ Resources that are shared across cells or are region-wide singletons do NOT incl
 | Resource | Shortname | Name Pattern | Example |
 |----------|-----------|-------------|---------|
 | Transit Gateway | tgw | `tgw-{region_short}` | tgw-euw2 |
-| TGW Route Table | rt-tgw | `rt-tgw-{region_short}-{env}` | rt-tgw-euw2-dev |
-| TGW Attachment | tgw-att | `tgw-att-{region_short}-{env}-{vpc_name}` | tgw-att-euw2-dev-main |
+| TGW Route Table | rt-tgw | `rt-tgw-{region_short}-{table}` | rt-tgw-euw2-dev, rt-tgw-euw1-wan |
+| TGW VPC Attachment | tgw-att | `tgw-att-{region_short}-{env}-{vpc_name}` | tgw-att-euw2-dev-main |
+| TGW Peering Attachment | tgw-att | `tgw-att-{requester}-{accepter}-pcx` | tgw-att-euw2-euw1-pcx |
 | Key Pair | kp | `kp-{region_short}-{env}` | kp-euw2-dev |
 
 ### Rationale
@@ -113,6 +118,8 @@ Resources that are shared across cells or are region-wide singletons do NOT incl
 - Including `cell_name` in per-cell resources makes it possible to distinguish resources from different cells when viewing them in the same region in the AWS Console.
 - Singleton resources (TGW, key pairs) exist once per region or per region/environment, so `cell_name` would be redundant.
 - The pattern is consistent and sortable — resources group naturally by type, region, and environment in alphabetical listings.
+
+
 
 ## State Files
 
