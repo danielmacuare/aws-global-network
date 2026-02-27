@@ -28,12 +28,12 @@ data "terraform_remote_state" "usw2_tgw" {
   }
 }
 
-data "terraform_remote_state" "usw1_tgw" {
+data "terraform_remote_state" "use1_tgw" {
   backend = "s3"
   config = {
     region  = "eu-west-2"
     bucket  = "dmac-bootstrap-tfstate"
-    key     = "env-networking/usw1-tgw/terraform.tfstate"
+    key     = "env-networking/use1-tgw/terraform.tfstate"
     encrypt = true
   }
 }
