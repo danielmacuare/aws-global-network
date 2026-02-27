@@ -151,6 +151,19 @@ resource "aws_network_acl_rule" "private_inbound_cross_region_supernet" {
   to_port        = 0
 }
 
+# Allow all inbound from multiple peer-region cells (cross-region TGW peering, list)
+resource "aws_network_acl_rule" "private_inbound_cross_region_supernet_cidrs" {
+  for_each       = { for idx, cidr in var.cross_region_supernet_cidrs : idx => cidr }
+  network_acl_id = aws_network_acl.private.id
+  rule_number    = each.key * 10 + 130
+  egress         = false
+  protocol       = "-1"
+  rule_action    = "allow"
+  cidr_block     = each.value
+  from_port      = 0
+  to_port        = 0
+}
+
 # Private NACL Egress Rules
 resource "aws_network_acl_rule" "private_outbound_all" {
   network_acl_id = aws_network_acl.private.id

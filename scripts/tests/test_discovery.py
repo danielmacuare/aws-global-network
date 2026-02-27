@@ -6,7 +6,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-
 from lib.config import RunConfig
 from lib.discovery import (
     discover_keypairs,
@@ -14,7 +13,6 @@ from lib.discovery import (
     discover_tgws,
     discover_vpc_cells,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -68,7 +66,9 @@ class TestDiscoverKeypairs:
         result = discover_keypairs(config)
         assert result == ["envs/dev/euw2/keypair"]
 
-    def test_discover_keypairs_returns_empty_when_no_tf_files(self, tmp_path: Path) -> None:
+    def test_discover_keypairs_returns_empty_when_no_tf_files(
+        self, tmp_path: Path
+    ) -> None:
         # Create directory but no .tf files
         (tmp_path / "envs" / "dev" / "euw2" / "keypair").mkdir(parents=True)
         config = make_config(tmp_path, environments=["dev"])
@@ -135,7 +135,9 @@ class TestDiscoverTgws:
         result = discover_tgws(config)
         assert result == ["envs/networking/euw2/tgw"]
 
-    def test_discover_tgws_returns_empty_when_networking_missing(self, tmp_path: Path) -> None:
+    def test_discover_tgws_returns_empty_when_networking_missing(
+        self, tmp_path: Path
+    ) -> None:
         config = make_config(tmp_path)
         result = discover_tgws(config)
         assert result == []
@@ -159,13 +161,19 @@ class TestDiscoverTgwPeering:
         result = discover_tgw_peering(config)
         assert result == ["envs/networking/global/tgw-peering"]
 
-    def test_discover_tgw_peering_returns_empty_when_missing(self, tmp_path: Path) -> None:
+    def test_discover_tgw_peering_returns_empty_when_missing(
+        self, tmp_path: Path
+    ) -> None:
         config = make_config(tmp_path)
         result = discover_tgw_peering(config)
         assert result == []
 
-    def test_discover_tgw_peering_returns_empty_when_no_tf_files(self, tmp_path: Path) -> None:
-        (tmp_path / "envs" / "networking" / "global" / "tgw-peering").mkdir(parents=True)
+    def test_discover_tgw_peering_returns_empty_when_no_tf_files(
+        self, tmp_path: Path
+    ) -> None:
+        (tmp_path / "envs" / "networking" / "global" / "tgw-peering").mkdir(
+            parents=True
+        )
         config = make_config(tmp_path)
         result = discover_tgw_peering(config)
         assert result == []
@@ -199,3 +207,48 @@ class TestSortedResults:
         config = make_config(tmp_path)
         result = discover_tgws(config)
         assert result == sorted(result)
+
+
+# ---------------------------------------------------------------------------
+# usw2 and use1 region discovery
+# ---------------------------------------------------------------------------
+
+
+class TestDiscoverUsw2Use1:
+    def test_discover_vpc_cells_picks_up_usw2_and_use1(self, tmp_path: Path) -> None:
+        _touch_tf(tmp_path / "envs" / "dev" / "usw2" / "cell5000")
+        _touch_tf(tmp_path / "envs" / "prod" / "usw2" / "cell4000")
+        _touch_tf(tmp_path / "envs" / "dev" / "use1" / "cell7000")
+        _touch_tf(tmp_path / "envs" / "prod" / "use1" / "cell6000")
+        config = make_config(tmp_path, environments=["dev", "prod"])
+        result = discover_vpc_cells(config)
+        assert "envs/dev/usw2/cell5000" in result
+        assert "envs/prod/usw2/cell4000" in result
+        assert "envs/dev/use1/cell7000" in result
+        assert "envs/prod/use1/cell6000" in result
+
+    def test_discover_tgws_picks_up_usw2_and_use1(self, tmp_path: Path) -> None:
+        _touch_tf(tmp_path / "envs" / "networking" / "usw2" / "tgw")
+        _touch_tf(tmp_path / "envs" / "networking" / "use1" / "tgw")
+        config = make_config(tmp_path)
+        result = discover_tgws(config)
+        assert "envs/networking/usw2/tgw" in result
+        assert "envs/networking/use1/tgw" in result
+
+    def test_discover_keypairs_picks_up_usw2_and_use1(self, tmp_path: Path) -> None:
+        _touch_tf(tmp_path / "envs" / "dev" / "usw2" / "keypair")
+        _touch_tf(tmp_path / "envs" / "prod" / "use1" / "keypair")
+        config = make_config(tmp_path, environments=["dev", "prod"])
+        result = discover_keypairs(config)
+        assert "envs/dev/usw2/keypair" in result
+        assert "envs/prod/use1/keypair" in result
+
+    def test_region_filter_usw2_only(self, tmp_path: Path) -> None:
+        _touch_tf(tmp_path / "envs" / "dev" / "usw2" / "cell5000")
+        _touch_tf(tmp_path / "envs" / "dev" / "use1" / "cell7000")
+        _touch_tf(tmp_path / "envs" / "dev" / "euw2" / "cell1000")
+        config = make_config(tmp_path, environments=["dev"], regions=["usw2"])
+        result = discover_vpc_cells(config)
+        assert "envs/dev/usw2/cell5000" in result
+        assert "envs/dev/use1/cell7000" not in result
+        assert "envs/dev/euw2/cell1000" not in result

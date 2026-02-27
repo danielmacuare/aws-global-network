@@ -116,7 +116,7 @@ def run_parallel_phase(
     with progress:
         task = progress.add_task(phase_name, total=len(dirs))
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=config.parallelism) as executor:
             future_to_dir = {
                 executor.submit(_make_runner(rel_dir, config, destroy).run): rel_dir
                 for rel_dir in dirs

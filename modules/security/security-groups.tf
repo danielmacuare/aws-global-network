@@ -83,6 +83,17 @@ resource "aws_security_group" "private" {
     }
   }
 
+  dynamic "ingress" {
+    for_each = var.cross_region_supernet_cidrs
+    content {
+      description = "All traffic from peer-region cells via TGW peering"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = [ingress.value]
+    }
+  }
+
   # All TCP Outbound
   egress {
     description = "All TCP outbound"

@@ -10,9 +10,11 @@ module "security" {
   public_subnet_ids  = [for k, v in module.vpc-main.public_subnets : v.id]
   private_subnet_ids = [for k, v in module.vpc-main.private_subnets : v.id]
 
-  # Allow all prod euw1 cells (10.16.0.0/16) to communicate via TGW
   env_supernet_cidr = "10.16.0.0/16"
 
-  # Allow prod euw2 cells (10.0.0.0/16) via cross-region TGW peering
-  cross_region_supernet_cidr = "10.0.0.0/16"
+  cross_region_supernet_cidrs = [
+    "10.0.0.0/16",  # euw2-prod
+    "10.32.0.0/16", # usw2-prod
+    "10.48.0.0/16", # use1-prod
+  ]
 }
