@@ -35,3 +35,4 @@ class RunConfig(BaseModel):
     log_dir: Path
     tgw_stabilise_wait: int = 30
     log_retention: int = 10
+    parallelism: int = 8
