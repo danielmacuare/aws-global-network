@@ -301,6 +301,17 @@ def main(
         f"Discovered: {len(keypairs)} keypair(s), {len(vpc_cells)} VPC cell(s), {len(tgws)} TGW(s), {len(tgw_atts)} TGW-VPC att(s), {len(tgw_peering)} peering dir(s)"
     )
 
+    # --json-only / --json-refresh: skip all deploy phases, just collect outputs
+    if json_only or json_refresh:
+        log_phase("Instance Inventory (json-only mode)")
+        _print_instance_inventory(
+            vpc_cells,
+            config,
+            write_json=True,
+            refresh=json_refresh,
+        )
+        return
+
     timing = TimingSummary()
 
     # Phase 0: SSH Key Pairs (parallel)
@@ -396,7 +407,12 @@ def main(
     # Instance inventory
     if not dry_run:
         log_phase("Instance Inventory")
-        _print_instance_inventory(vpc_cells, config)
+        _print_instance_inventory(
+            vpc_cells,
+            config,
+            write_json=json_output or json_only or json_refresh,
+            refresh=json_refresh,
+        )
 
     # Timing summary
     timing.render(console)
