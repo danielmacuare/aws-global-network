@@ -29,8 +29,8 @@ provider "aws" {
   region = "us-west-2"
 }
 
-# Aliased provider — us-west-1
+# Aliased provider — us-east-1
 provider "aws" {
-  alias  = "usw1"
-  region = "us-west-1"
+  alias  = "use1"
+  region = "us-east-1"
 }
