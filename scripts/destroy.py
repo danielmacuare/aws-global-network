@@ -101,6 +101,14 @@ def main(
             help="Seconds to wait for TGW stabilisation between Phase 2 and 3",
         ),
     ] = 30,
+    parallelism: Annotated[
+        int,
+        typer.Option(
+            "--parallelism",
+            "-p",
+            help="Max concurrent terraform runs (default: 8)",
+        ),
+    ] = 8,
 ) -> None:
     """Destroy all AWS Global Network infrastructure in reverse dependency order."""
     repo_root = Path(__file__).parent.parent
@@ -117,6 +125,7 @@ def main(
         repo_root=repo_root,
         log_dir=log_dir,
         tgw_stabilise_wait=tgw_wait,
+        parallelism=parallelism,
     )
 
     _rotate_logs(logs_base, config.log_retention)

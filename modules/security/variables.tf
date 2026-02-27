@@ -45,6 +45,12 @@ variable "cross_region_supernet_cidr" {
   default     = ""
 }
 
+variable "cross_region_supernet_cidrs" {
+  type        = list(string)
+  description = "List of peer-region environment supernet CIDRs for cross-region TGW peering traffic. Use when a cell peers with more than one remote region."
+  default     = []
+}
+
 variable "cell_name" {
   type        = string
   description = "Cell name for resource identification (e.g. cell1000)"

@@ -1,112 +1,169 @@
-# Deployment Instructions
+# Deployment
 
-## Deploy to Development Environment (EU West 2)
+## Overview
 
-1. **Navigate to the environment directory:**
+The deployment is orchestrated by `scripts/deploy.py`, a Python CLI that discovers Terraform directories from the filesystem and deploys them in phased order. Each phase has dependency constraints — later phases depend on resources created by earlier ones.
 
-   ```bash
-   cd envs/dev/euw2/cell1000
-   ```
+All phases use `terraform init` + `terraform apply -auto-approve` (or `terraform plan` in dry-run mode). Logs are written per-directory to `logs/<timestamp>/`.
 
-2. **Initialize Terraform:**
+## Deployment Phases
 
-   ```bash
-   terraform init
-   ```
+```mermaid
+flowchart TD
+    Start([deploy.py]) --> Discovery
 
-3. **Review the deployment plan:**
+    subgraph Discovery["Discovery (filesystem scan)"]
+        D1[Keypairs]
+        D2[TGWs]
+        D3[VPC Cells]
+        D4[TGW-VPC Attachments]
+        D5[TGW Peering]
+    end
 
-   ```bash
-   terraform plan -var-file="variables.tfvars"
-   ```
+    Discovery --> P0
 
-4. **Apply the configuration:**
+    subgraph P0["Phase 0: SSH Key Pairs — parallel"]
+        KP1[dev/euw2/keypair]
+        KP2[prod/euw2/keypair]
+        KP3[dev/euw1/keypair]
+        KP4[prod/euw1/keypair]
+        KP5[dev/usw2/keypair]
+        KP6[prod/usw2/keypair]
+        KP7[dev/use1/keypair]
+        KP8[prod/use1/keypair]
+    end
 
-   ```bash
-   terraform apply -var-file="variables.tfvars"
-   ```
+    P0 --> P1
 
-5. **Verify deployment:**
+    subgraph P1["Phase 1: VPCs + TGWs — parallel"]
+        direction LR
+        subgraph TGWs["Transit Gateways"]
+            T1[networking/euw2/tgw]
+            T2[networking/euw1/tgw]
+            T3[networking/usw2/tgw]
+            T4[networking/use1/tgw]
+        end
+        subgraph VPCs["VPC Cells"]
+            V1[prod/euw2/cell0000]
+            V2[prod/euw2/cell0001]
+            V3[dev/euw2/cell1000]
+            V4[dev/euw2/cell1001]
+            V5["... 12 more cells"]
+        end
+    end
 
-   ```bash
-   terraform show
-   ```
+    P1 --> Wait["⏳ TGW Stabilisation Wait (30s)"]
+    Wait --> P2
 
-## Deploy to Additional Regions
+    subgraph P2["Phase 2: TGW-VPC Attachments — parallel"]
+        A1[networking/euw2/tgw-vpc-atts]
+        A2[networking/euw1/tgw-vpc-atts]
+        A3[networking/usw2/tgw-vpc-atts]
+        A4[networking/use1/tgw-vpc-atts]
+    end
 
-To deploy to a new region:
+    P2 --> Gate{"TGW Peering\nReadiness Gate"}
+    Gate -->|All TGWs ready| P3
+    Gate -->|Not ready| Skip([Skip Phase 3\nnon-fatal])
 
-1. **Create a new environment directory:**
+    subgraph P3["Phase 3: TGW Peering — sequential"]
+        PCX[networking/global/tgw-peering\n6 peering attachments\n24 static routes]
+    end
 
-   ```bash
-   mkdir -p envs/dev/use1  # For US East 1
-   ```
-
-2. **Copy configuration files:**
-
-   ```bash
-   cp -r envs/dev/euw2/cell1000 envs/dev/use1/cell1000
-   ```
-
-3. **Update region-specific values:**
-   - Update `variables.tfvars` with new region
-   - Update `backend.tf` with new state key
-   - Update `locals.tf` with new region
-
-4. **Deploy using the same steps above**
-
-## Module Usage
-
-### VPC Module
-
-The `create-vpc` module creates:
-
-- VPC with configurable CIDR
-- Public and private subnets across multiple AZs
-- Route tables and NAT gateways
-- Consistent tagging
-
-Example usage:
-
-```hcl
-module "vpc-main" {
-  source = "../../../modules/create-vpc/"
-
-  region       = "eu-west-2"
-  region_short = "euw2"
-  environment      = "dev"
-  vpc_name         = "main"
-  vpc_cidr         = "10.0.0.0/20"
-
-  private_subnets = {
-    priv-0 = {
-      az          = "eu-west-2a"
-      cidr        = "10.0.0.0/24"
-      nat_gateway = true
-    }
-  }
-
-  public_subnets = {
-    pub-0 = {
-      az          = "eu-west-2a"
-      cidr        = "10.0.10.0/24"
-      nat_gateway = false
-    }
-  }
-}
+    P3 --> Inventory[Instance Inventory]
+    Skip --> Summary
+    Inventory --> Summary([Phase Summary + Timing])
 ```
 
-## Troubleshooting
+## Phase Details
 
-### Common Issues
+### Phase 0: SSH Key Pairs (parallel)
 
-1. **Backend initialization fails:**
-   - Ensure S3 bucket exists and you have access
-   - Check AWS credentials are configured
+Deploys SSH key pairs for each environment/region combination. These are needed by EC2 instances in Phase 1. All keypair directories run in parallel via `ThreadPoolExecutor`.
 
-2. **Plan fails with permission errors:**
-   - Verify AWS IAM permissions for VPC, subnet, and route table operations
+- Directories: `envs/{dev,prod}/{euw2,euw1,usw2,use1}/keypair/`
+- Dependencies: None
+- Parallelism: All directories run concurrently
 
-3. **State lock errors:**
-   - Check if another deployment is running
-   - Manually unlock if needed: `terraform force-unlock <lock-id>`
+### Phase 1: VPCs + TGWs (parallel)
+
+Deploys Transit Gateways and all VPC cells simultaneously. TGWs and VPCs have no inter-dependencies at creation time, so they can all run in parallel.
+
+- TGW directories: `envs/networking/{euw2,euw1,usw2,use1}/tgw/`
+- VPC directories: `envs/{dev,prod}/{euw2,euw1,usw2,use1}/cell*/`
+- Dependencies: Phase 0 (key pairs must exist for EC2 instances)
+- Parallelism: All TGWs + all VPCs run concurrently
+
+After Phase 1 completes, a 30-second stabilisation wait allows TGWs to become fully available before attaching VPCs.
+
+### Phase 2: TGW-VPC Attachments (parallel)
+
+Attaches each VPC to its region's Transit Gateway and associates it with the correct route table (prod or dev) based on the cell's environment tag.
+
+- Directories: `envs/networking/{euw2,euw1,usw2,use1}/tgw-vpc-atts/`
+- Dependencies: Phase 1 (TGWs and VPCs must exist)
+- Parallelism: All attachment directories run concurrently
+
+Each directory uses `terraform_remote_state` to read VPC and TGW outputs, then creates attachments, route table associations, and VPC-side static routes (`10.0.0.0/8 → TGW`).
+
+### Peering Readiness Gate
+
+Before Phase 3, the script checks that all 4 TGW states are accessible in S3. It parses `data.tf` in the peering directory to find all `terraform_remote_state` blocks referencing TGW state files, then verifies each one has a valid `transit_gateway.id` output.
+
+If any TGW is not ready (e.g. you only deployed 2 regions), Phase 3 is skipped with a non-fatal warning. Use `--force-peering` to bypass.
+
+### Phase 3: TGW Peering (sequential)
+
+Deploys the full-mesh TGW peering across all 4 regions. This is a single `terraform apply` on `envs/networking/global/tgw-peering/` that creates:
+
+- 6 peering attachments (full mesh: euw2↔euw1, euw2↔usw2, euw2↔use1, euw1↔usw2, euw1↔use1, usw2↔use1)
+- 12 WAN route table associations (2 per attachment)
+- 24 static routes (prod + dev on each side of each attachment)
+- 6 `time_sleep` resources (120s each for peering stabilisation)
+
+This phase runs sequentially (single directory) because all peering lives in one Terraform state.
+
+## CLI Usage
+
+```bash
+# Full deploy — all regions, all environments
+python scripts/deploy.py
+
+# Dry-run (plan only, no changes)
+python scripts/deploy.py --dry-run
+
+# Deploy specific regions
+python scripts/deploy.py --regions usw2,use1
+
+# Deploy specific environment
+python scripts/deploy.py --environment dev
+
+# Skip peering phase
+python scripts/deploy.py --skip-peering
+
+# Force peering (bypass readiness gate)
+python scripts/deploy.py --force-peering
+
+# Custom TGW stabilisation wait
+python scripts/deploy.py --tgw-wait 60
+```
+
+## Destroy
+
+The destroy script (`scripts/destroy.py`) runs the phases in reverse order:
+
+1. TGW Peering (sequential)
+2. TGW-VPC Attachments (parallel)
+3. VPCs + TGWs (parallel)
+4. SSH Key Pairs (parallel)
+
+```bash
+# Full destroy
+python scripts/destroy.py
+
+# Dry-run destroy
+python scripts/destroy.py --dry-run
+
+# Destroy specific regions
+python scripts/destroy.py --regions usw2,use1
+```

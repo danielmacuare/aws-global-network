@@ -65,26 +65,58 @@ def _rotate_logs(logs_base: Path, retention: int) -> None:
         shutil.rmtree(dirs.pop(0))
 
 
-def _print_instance_inventory(vpc_cells: list[str], config: RunConfig) -> None:
+def _print_instance_inventory(
+    vpc_cells: list[str],
+    config: RunConfig,
+    *,
+    write_json: bool = False,
+    refresh: bool = False,
+) -> None:
     """
     For each VPC cell directory, run ``terraform output -json instances`` and
-    display results in a Rich table.  Silently skips cells with no output.
+    display results in a Rich table.
 
-    Expected output structure::
-
-        {
-          "bastions":      { "bastion-euw2-dev-0-cell1000": "1.2.3.4", ... },
-          "private_hosts": { "private-euw2-dev-0-cell1000": "10.0.1.5", ... }
-        }
+    Parameters
+    ----------
+    write_json:
+        When True, write ``instances.json`` to the repo root.
+    refresh:
+        When True, run ``terraform refresh`` on each cell before collecting
+        outputs to ensure IPs are up-to-date with AWS.
     """
+    import json
+
     from rich.table import Table
 
     any_printed = False
+    inventory: dict[str, dict] = {}
 
     for rel_dir in vpc_cells:
         abs_dir = config.repo_root / rel_dir
         if not abs_dir.is_dir():
             continue
+
+        # Optionally refresh state from AWS before reading outputs
+        if refresh:
+            log_info(f"Refreshing state: {rel_dir}")
+            try:
+                subprocess.run(
+                    [
+                        "terraform",
+                        "apply",
+                        "-refresh-only",
+                        "-auto-approve",
+                        "-input=false",
+                    ],
+                    cwd=abs_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                log_warn(
+                    f"Refresh timed out or failed for {rel_dir}, using cached state."
+                )
 
         try:
             result = subprocess.run(
@@ -100,8 +132,6 @@ def _print_instance_inventory(vpc_cells: list[str], config: RunConfig) -> None:
         if result.returncode != 0 or not result.stdout.strip():
             continue
 
-        import json
-
         try:
             instances = json.loads(result.stdout)
         except json.JSONDecodeError:
@@ -112,6 +142,10 @@ def _print_instance_inventory(vpc_cells: list[str], config: RunConfig) -> None:
 
         # Build a flat list of rows from the nested bastions / private_hosts structure.
         rows: list[tuple[str, str, str]] = []
+        cell_data: dict[str, dict[str, str]] = {
+            "bastions": {},
+            "private_hosts": {},
+        }
 
         if isinstance(instances, dict):
             bastions = instances.get("bastions", {})
@@ -120,29 +154,32 @@ def _print_instance_inventory(vpc_cells: list[str], config: RunConfig) -> None:
             if isinstance(bastions, dict):
                 for name, ip in sorted(bastions.items()):
                     rows.append((str(name), str(ip), "bastion"))
+                    cell_data["bastions"][str(name)] = str(ip)
             if isinstance(private_hosts, dict):
                 for name, ip in sorted(private_hosts.items()):
                     rows.append((str(name), str(ip), "private"))
+                    cell_data["private_hosts"][str(name)] = str(ip)
 
             # Fallback: if no bastions/private_hosts keys, treat as flat { name: attrs }
             if not rows:
                 for name, attrs in instances.items():
                     if isinstance(attrs, dict):
-                        rows.append(
-                            (
-                                str(name),
-                                str(attrs.get("private_ip", attrs.get("ip", "—"))),
-                                str(attrs.get("type", "—")),
-                            )
-                        )
+                        ip = str(attrs.get("private_ip", attrs.get("ip", "—")))
+                        rows.append((str(name), ip, str(attrs.get("type", "—"))))
+                        cell_data["private_hosts"][str(name)] = ip
                     elif isinstance(attrs, str):
                         rows.append((str(name), str(attrs), "—"))
+                        cell_data["private_hosts"][str(name)] = str(attrs)
 
         if not rows:
             continue
 
+        inventory[rel_dir] = cell_data
+
         table = Table(
-            title=f"Instances: {rel_dir}", show_header=True, header_style="bold green"
+            title=f"Instances: {rel_dir}",
+            show_header=True,
+            header_style="bold green",
         )
         table.add_column("Name")
         table.add_column("IP")
@@ -156,6 +193,12 @@ def _print_instance_inventory(vpc_cells: list[str], config: RunConfig) -> None:
 
     if not any_printed:
         log_info("No instance inventory output found across VPC cells.")
+
+    # Write machine-readable JSON inventory to repo root
+    if write_json:
+        inventory_file = config.repo_root / "instances.json"
+        inventory_file.write_text(json.dumps(inventory, indent=2) + "\n")
+        log_info(f"Instance inventory written to {inventory_file}")
 
 
 @app.command()
@@ -191,6 +234,35 @@ def main(
             help="Seconds to wait for TGW stabilisation between Phase 1 and 2",
         ),
     ] = 30,
+    parallelism: Annotated[
+        int,
+        typer.Option(
+            "--parallelism",
+            "-p",
+            help="Max concurrent terraform runs (default: 8)",
+        ),
+    ] = 8,
+    json_output: Annotated[
+        bool,
+        typer.Option(
+            "--json",
+            help="Write instances.json to repo root after deploy",
+        ),
+    ] = False,
+    json_only: Annotated[
+        bool,
+        typer.Option(
+            "--json-only",
+            help="Skip deploy, collect terraform outputs and write instances.json",
+        ),
+    ] = False,
+    json_refresh: Annotated[
+        bool,
+        typer.Option(
+            "--json-refresh",
+            help="Skip deploy, refresh state from AWS, then write instances.json",
+        ),
+    ] = False,
 ) -> None:
     """Deploy all AWS Global Network infrastructure."""
     repo_root = Path(__file__).parent.parent
@@ -207,12 +279,14 @@ def main(
         repo_root=repo_root,
         log_dir=log_dir,
         tgw_stabilise_wait=tgw_wait,
+        parallelism=parallelism,
     )
 
     _rotate_logs(logs_base, config.log_retention)
 
     log_info(
-        f"Deploy started — environments={config.environments}, regions={config.regions or 'all'}, dry_run={dry_run}"
+        f"Deploy started — environments={config.environments}, regions={config.regions or 'all'}, "
+        f"dry_run={dry_run}, parallelism={config.parallelism}"
     )
     log_info(f"Log directory: {log_dir}")
 
@@ -231,9 +305,7 @@ def main(
 
     # Phase 0: SSH Key Pairs (parallel)
     try:
-        result = run_parallel_phase(
-            "Phase 0: SSH Key Pairs", keypairs, config, console
-        )
+        result = run_parallel_phase("Phase 0: SSH Key Pairs", keypairs, config, console)
         timing.add_phase(result)
     except RuntimeError as exc:
         from lib.console import log_error

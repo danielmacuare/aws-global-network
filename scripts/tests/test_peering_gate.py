@@ -8,10 +8,8 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-
 from lib.config import RunConfig
 from lib.peering_gate import PeeringGate, RegionReadiness
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -39,7 +37,7 @@ def _write_data_tf(path: Path, content: str) -> None:
     (path / "data.tf").write_text(content)
 
 
-SAMPLE_DATA_TF = '''
+SAMPLE_DATA_TF = """
 data "terraform_remote_state" "tgw_euw2" {
   backend = "s3"
   config = {
@@ -48,9 +46,9 @@ data "terraform_remote_state" "tgw_euw2" {
     region = "eu-west-2"
   }
 }
-'''
+"""
 
-SAMPLE_DATA_TF_MULTI = '''
+SAMPLE_DATA_TF_MULTI = """
 data "terraform_remote_state" "tgw_euw2" {
   backend = "s3"
   config = {
@@ -68,7 +66,7 @@ data "terraform_remote_state" "tgw_euw1" {
     region = "eu-west-1"
   }
 }
-'''
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +112,9 @@ class TestExtractTgwDirs:
 
         assert result.count("envs/networking/euw2/tgw") == 1
 
-    def test_extract_tgw_dirs_returns_empty_when_no_data_tf(self, tmp_path: Path) -> None:
+    def test_extract_tgw_dirs_returns_empty_when_no_data_tf(
+        self, tmp_path: Path
+    ) -> None:
         """Returns empty list when peering_dirs have no data.tf."""
         config = make_config(tmp_path)
         gate = PeeringGate(config, ["envs/networking/global/tgw-peering"])
@@ -128,19 +128,23 @@ class TestExtractTgwDirs:
 
 
 class TestPeeringGateCheck:
-    def test_check_returns_all_ready_when_tgw_output_present(self, tmp_path: Path) -> None:
+    def test_check_returns_all_ready_when_tgw_output_present(
+        self, tmp_path: Path
+    ) -> None:
         """Returns (True, results) when terraform output shows a valid TGW ID."""
         peering_dir = "envs/networking/global/tgw-peering"
         _write_data_tf(tmp_path / peering_dir, SAMPLE_DATA_TF)
         # Create the tgw dir so abs path exists
         (tmp_path / "envs" / "networking" / "euw2" / "tgw").mkdir(parents=True)
 
-        valid_output = json.dumps({
-            "transit_gateway": {
-                "value": {"id": "tgw-0abc1234", "arn": "arn:aws:ec2:..."},
-                "type": "object",
+        valid_output = json.dumps(
+            {
+                "transit_gateway": {
+                    "value": {"id": "tgw-0abc1234", "arn": "arn:aws:ec2:..."},
+                    "type": "object",
+                }
             }
-        })
+        )
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -157,7 +161,9 @@ class TestPeeringGateCheck:
         assert results[0].is_ready is True
         assert "tgw-0abc1234" in results[0].reason
 
-    def test_check_returns_not_ready_when_tgw_output_empty(self, tmp_path: Path) -> None:
+    def test_check_returns_not_ready_when_tgw_output_empty(
+        self, tmp_path: Path
+    ) -> None:
         """Returns (False, results) when terraform output is empty JSON {}."""
         peering_dir = "envs/networking/global/tgw-peering"
         _write_data_tf(tmp_path / peering_dir, SAMPLE_DATA_TF)
@@ -201,7 +207,7 @@ class TestPeeringGateCheck:
         """Returns (True, []) when no TGW remote state references found."""
         peering_dir = "envs/networking/global/tgw-peering"
         # Write data.tf with NO tgw keys
-        _write_data_tf(tmp_path / peering_dir, '# no remote state references\n')
+        _write_data_tf(tmp_path / peering_dir, "# no remote state references\n")
 
         config = make_config(tmp_path)
         gate = PeeringGate(config, [peering_dir])
@@ -245,9 +251,9 @@ class TestPeeringGateCheck:
             if call_count == 1:
                 # euw2 is ready
                 result.returncode = 0
-                result.stdout = json.dumps({
-                    "transit_gateway": {"value": {"id": "tgw-0abc"}, "type": "object"}
-                })
+                result.stdout = json.dumps(
+                    {"transit_gateway": {"value": {"id": "tgw-0abc"}, "type": "object"}}
+                )
             else:
                 # euw1 is not ready
                 result.returncode = 0
@@ -263,7 +269,7 @@ class TestPeeringGateCheck:
         assert all_ready is False
         assert len(results) == 2
         ready_flags = {r.region_short: r.is_ready for r in results}
-        assert any(v for v in ready_flags.values())   # at least one ready
+        assert any(v for v in ready_flags.values())  # at least one ready
         assert any(not v for v in ready_flags.values())  # at least one not ready
 
 
@@ -275,15 +281,26 @@ class TestPeeringGateCheck:
 class TestRenderStatus:
     def test_render_status_prints_table(self, tmp_path: Path) -> None:
         """render_status produces output without raising."""
-        from rich.console import Console
         from io import StringIO
+
+        from rich.console import Console
 
         config = make_config(tmp_path)
         gate = PeeringGate(config, [])
 
         results = [
-            RegionReadiness(region_short="euw2", tgw_dir="envs/networking/euw2/tgw", is_ready=True, reason="TGW ID: tgw-0abc"),
-            RegionReadiness(region_short="euw1", tgw_dir="envs/networking/euw1/tgw", is_ready=False, reason="No state output found"),
+            RegionReadiness(
+                region_short="euw2",
+                tgw_dir="envs/networking/euw2/tgw",
+                is_ready=True,
+                reason="TGW ID: tgw-0abc",
+            ),
+            RegionReadiness(
+                region_short="euw1",
+                tgw_dir="envs/networking/euw1/tgw",
+                is_ready=False,
+                reason="No state output found",
+            ),
         ]
 
         buf = StringIO()
@@ -293,3 +310,84 @@ class TestRenderStatus:
         output = buf.getvalue()
         assert "euw2" in output
         assert "euw1" in output
+
+
+# ---------------------------------------------------------------------------
+# Four-region fixtures and tests
+# ---------------------------------------------------------------------------
+
+
+SAMPLE_DATA_TF_FOUR_REGIONS = """
+data "terraform_remote_state" "euw2_tgw" {
+  backend = "s3"
+  config = {
+    bucket = var.backend_bucket
+    key    = "env-networking/euw2-tgw/terraform.tfstate"
+    region = "eu-west-2"
+  }
+}
+data "terraform_remote_state" "euw1_tgw" {
+  backend = "s3"
+  config = {
+    key = "env-networking/euw1-tgw/terraform.tfstate"
+  }
+}
+data "terraform_remote_state" "usw2_tgw" {
+  backend = "s3"
+  config = {
+    key = "env-networking/usw2-tgw/terraform.tfstate"
+  }
+}
+data "terraform_remote_state" "use1_tgw" {
+  backend = "s3"
+  config = {
+    key = "env-networking/use1-tgw/terraform.tfstate"
+  }
+}
+"""
+
+
+class TestExtractTgwDirsFourRegions:
+    def test_extract_tgw_dirs_four_regions(self, tmp_path: Path) -> None:
+        """Parses four TGW keys from data.tf and returns all four relative dir paths."""
+        peering_dir = "envs/networking/global/tgw-peering"
+        _write_data_tf(tmp_path / peering_dir, SAMPLE_DATA_TF_FOUR_REGIONS)
+
+        config = make_config(tmp_path)
+        gate = PeeringGate(config, [peering_dir])
+        result = gate._extract_tgw_dirs()
+
+        assert len(result) == 4
+        assert "envs/networking/euw2/tgw" in result
+        assert "envs/networking/euw1/tgw" in result
+        assert "envs/networking/usw2/tgw" in result
+        assert "envs/networking/use1/tgw" in result
+
+    def test_region_filter_excludes_non_matching_tgw_dirs(self, tmp_path: Path) -> None:
+        """Documents that _extract_tgw_dirs does NOT filter by config.regions.
+
+        Region filtering is not applied at the _extract_tgw_dirs level — the
+        method returns every TGW dir parsed from data.tf regardless of the
+        regions list in the RunConfig.  This test verifies that behaviour: even
+        when regions=["usw2", "use1"] is supplied, all four TGW dirs (euw2,
+        euw1, usw2, use1) are still returned from _extract_tgw_dirs.
+        """
+        peering_dir = "envs/networking/global/tgw-peering"
+        _write_data_tf(tmp_path / peering_dir, SAMPLE_DATA_TF_FOUR_REGIONS)
+
+        # Create all four tgw dirs so abs paths exist
+        for region in ("euw2", "euw1", "usw2", "use1"):
+            (tmp_path / "envs" / "networking" / region / "tgw").mkdir(parents=True)
+
+        # Pass only usw2 and use1 via the regions filter
+        config = make_config(tmp_path, regions=["usw2", "use1"])
+        gate = PeeringGate(config, [peering_dir])
+
+        # _extract_tgw_dirs does not consult config.regions — all 4 are returned
+        result = gate._extract_tgw_dirs()
+
+        assert len(result) == 4
+        assert "envs/networking/euw2/tgw" in result
+        assert "envs/networking/euw1/tgw" in result
+        assert "envs/networking/usw2/tgw" in result
+        assert "envs/networking/use1/tgw" in result
