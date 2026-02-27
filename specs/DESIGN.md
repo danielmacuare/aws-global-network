@@ -36,10 +36,10 @@ The allocation follows a hierarchical structure:
 | vpc-usw2-prod-cell4001 | Prod | 10.32.16.0/20 | | |
 | vpc-usw2-dev-cell5000 | Dev | 10.33.0.0/20 | 10.33.0.0/16 | |
 | vpc-usw2-dev-cell5001 | Dev | 10.33.16.0/20 | | |
-| vpc-usw1-prod-cell6000 | Prod | 10.48.0.0/20 | 10.48.0.0/16 | us-west-1 - N California |
-| vpc-usw1-prod-cell6001 | Prod | 10.48.16.0/20 | | |
-| vpc-usw1-dev-cell7000 | Dev | 10.49.0.0/20 | 10.49.0.0/16 | |
-| vpc-usw1-dev-cell7001 | Dev | 10.49.16.0/20 | | |
+| vpc-use1-prod-cell6000 | Prod | 10.48.0.0/20 | 10.48.0.0/16 | us-east-1 - N. Virginia |
+| vpc-use1-prod-cell6001 | Prod | 10.48.16.0/20 | | |
+| vpc-use1-dev-cell7000 | Dev | 10.49.0.0/20 | 10.49.0.0/16 | |
+| vpc-use1-dev-cell7001 | Dev | 10.49.16.0/20 | | |
 
 ## Transit Gateway
 
@@ -47,7 +47,7 @@ The allocation follows a hierarchical structure:
 
 euw2: 64514
 euw1: 64515
-usw1: 64517
+use1: 64517
 usw2: 64518
 
 
