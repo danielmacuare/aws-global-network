@@ -15,6 +15,6 @@ module "security" {
   cross_region_supernet_cidrs = [
     "10.0.0.0/16",  # euw2-prod
     "10.16.0.0/16", # euw1-prod
-    "10.48.0.0/16", # usw1-prod
+    "10.48.0.0/16", # use1-prod
   ]
 }
