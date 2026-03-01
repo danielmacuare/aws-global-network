@@ -49,3 +49,6 @@ ssh-keys/
 __pycache__/
 uv.lock
 
+# Generated instance inventory
+instances.json
+
