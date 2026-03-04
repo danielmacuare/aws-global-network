@@ -1,0 +1,53 @@
+version: 0.1
+
+projects:
+  # dev / eu-west-2
+  - path: envs/dev/euw2/cell1000
+  - path: envs/dev/euw2/cell1001
+
+  # dev / eu-west-1
+  - path: envs/dev/euw1/cell3000
+  - path: envs/dev/euw1/cell3001
+
+  # dev / us-east-1
+  - path: envs/dev/use1/cell7000
+  - path: envs/dev/use1/cell7001
+
+  # dev / us-west-2
+  - path: envs/dev/usw2/cell5000
+  - path: envs/dev/usw2/cell5001
+
+  # prod / eu-west-2
+  - path: envs/prod/euw2/cell0000
+  - path: envs/prod/euw2/cell0001
+
+  # prod / eu-west-1
+  - path: envs/prod/euw1/cell2000
+  - path: envs/prod/euw1/cell2001
+
+  # prod / us-east-1
+  - path: envs/prod/use1/cell6000
+  - path: envs/prod/use1/cell6001
+
+  # prod / us-west-2
+  - path: envs/prod/usw2/cell4000
+  - path: envs/prod/usw2/cell4001
+
+  # networking / eu-west-2
+  - path: envs/networking/euw2/tgw
+  - path: envs/networking/euw2/tgw-vpc-atts
+
+  # networking / eu-west-1
+  - path: envs/networking/euw1/tgw
+  - path: envs/networking/euw1/tgw-vpc-atts
+
+  # networking / us-east-1
+  - path: envs/networking/use1/tgw
+  - path: envs/networking/use1/tgw-vpc-atts
+
+  # networking / us-west-2
+  - path: envs/networking/usw2/tgw
+  - path: envs/networking/usw2/tgw-vpc-atts
+
+  # networking / global
+  - path: envs/networking/global/tgw-peering

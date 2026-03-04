@@ -1,93 +1,109 @@
-# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#on
-# describe other options for 'on', 'pull_request' is a good default.
 ---
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-permissions: write-all
-env:
-  # If you use private modules you'll need this env variable to use
-  # the same ssh-agent socket value across all jobs & steps.
-  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-jobs:
-  infracost:
-    name: Infracost
-    runs-on: ubuntu-latest
+  push:
+    branches: [main]
 
-    env:
-      # https://stackoverflow.com/questions/64953274/how-to-send-passphrase-for-ssh-add-with-github-actions
-      GIT_SSH_KEY_PASSPHRASE: ${{secrets.GIT_SSH_KEY_PASSPHRASE}}
-      GIT_SSH_KEY: ${{secrets.GIT_SSH_KEY}}
-      TF_ROOT: envs/dev/euw2/cell1000/
-      # This instructs the CLI to send cost estimates to Infracost Cloud. Our SaaS product
-      #   complements the open source CLI by giving teams advanced visibility and controls.
-      #   The cost estimates are transmitted in JSON format and do not contain any cloud
-      #   credentials or secrets (see https://infracost.io/docs/faq/ for more information).
-      INFRACOST_ENABLE_CLOUD: false
-      # If you're using Terraform Cloud/Enterprise and have variables or private modules stored
-      # on there, specify the following to automatically retrieve the variables:
-      #   INFRACOST_TERRAFORM_CLOUD_TOKEN: ${{ secrets.TFC_TOKEN }}
-      #   INFRACOST_TERRAFORM_CLOUD_HOST: app.terraform.io # Change this if you're using Terraform Enterprise
+permissions:
+  pull-requests: write
+  contents: read
+  id-token: write   # Required for OIDC authentication with AWS
+
+env:
+  INFRACOST_ENABLE_CLOUD: false
+  AWS_DEFAULT_REGION: eu-west-2
+
+jobs:
+  # -----------------------------------------------------------------------
+  # Job 1: Run on PRs — generate cost diff and post a comment
+  # -----------------------------------------------------------------------
+  infracost:
+    name: Infracost PR comment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
 
     steps:
-      # If you use private modules, add an environment variable or secret
-      # called GIT_SSH_KEY with your private key, so Infracost can access
-      # private repositories (similar to how Terraform/Terragrunt does).
-      - name: add GIT_SSH_KEY
-        run: |
-          ssh-agent -a $SSH_AUTH_SOCK
-          mkdir -p ~/.ssh
-          echo '#!/bin/sh'> ~/.ssh_askpass
-          echo "echo $GIT_SSH_KEY_PASSPHRASE" >> ~/.ssh_askpass && chmod +x ~/.ssh_askpass
-          echo "$GIT_SSH_KEY" | tr -d '\r' | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add -
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
       - name: Setup Infracost
-        uses: infracost/actions/setup@v2
-        # See https://github.com/infracost/actions/tree/master/setup for other inputs
-        # If you can't use this action, see Docker images in https://infracost.io/cicd
+        uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      # Checkout the base branch of the pull request (e.g. main/master).
+      # Checkout the base branch to generate the cost baseline
       - name: Checkout base branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-          ref: '${{ github.event.pull_request.base.ref }}'
+          ref: ${{ github.event.pull_request.base.ref }}
 
-      # Generate Infracost JSON file as the baseline.
-      - name: Generate Infracost cost estimate baseline
+      - name: Configure AWS credentials (base branch)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Generate cost estimate baseline
         run: |
-          infracost breakdown --path=${TF_ROOT} \
-                              --format=json \
-                              --out-file=/tmp/infracost-base.json
+          infracost breakdown \
+            --config-file=infracost.yml \
+            --terraform-init-flags="-backend=false" \
+            --format=json \
+            --out-file=/tmp/infracost-base.json
 
-      # Checkout the current PR branch so we can create a diff.
+      # Checkout the PR branch to generate the cost diff
       - name: Checkout PR branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      # Generate an Infracost diff and save it to a JSON file.
-      - name: Generate Infracost diff
+      - name: Configure AWS credentials (PR branch)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Generate cost diff
         run: |
-          infracost diff --path=${TF_ROOT} \
-                          --format=json \
-                          --compare-to=/tmp/infracost-base.json \
-                          --out-file=/tmp/infracost.json
+          infracost diff \
+            --config-file=infracost.yml \
+            --terraform-init-flags="-backend=false" \
+            --format=json \
+            --compare-to=/tmp/infracost-base.json \
+            --out-file=/tmp/infracost.json
 
-      # Posts a comment to the PR using the 'update' behavior.
-      # This creates a single comment and updates it. The "quietest" option.
-      # The other valid behaviors are:
-      #   delete-and-new - Delete previous comments and create a new one.
-      #   hide-and-new - Minimize previous comments and create a new one.
-      #   new - Create a new cost estimate comment on every push.
-      # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+      # Post or update a single comment on the PR
       - name: Post Infracost comment
-      # https://github.com/actions/checkout/issues/58#issuecomment-663103947
         run: |
-            infracost comment github --path=/tmp/infracost.json \
-                                     --repo=${{github.repository}} \
-                                     --github-token=${{github.token}} \
-                                     --pull-request=${{github.event.number}} \
-                                     --behavior=new
+          infracost comment github \
+            --path=/tmp/infracost.json \
+            --repo=${{ github.repository }} \
+            --github-token=${{ github.token }} \
+            --pull-request=${{ github.event.number }} \
+            --behavior=update
+
+  # -----------------------------------------------------------------------
+  # Job 2: Run on push to main — update the baseline breakdown
+  # -----------------------------------------------------------------------
+  infracost-baseline:
+    name: Infracost baseline update
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Generate baseline breakdown
+        run: |
+          infracost breakdown \
+            --config-file=infracost.yml \
+            --terraform-init-flags="-backend=false" \
+            --format=table
