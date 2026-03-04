@@ -13,6 +13,7 @@ permissions:
 env:
   INFRACOST_ENABLE_CLOUD: false
   AWS_DEFAULT_REGION: eu-west-2
+  TF_CLI_ARGS_init: "-backend=false"
 
 jobs:
   # -----------------------------------------------------------------------
@@ -45,7 +46,6 @@ jobs:
         run: |
           infracost breakdown \
             --config-file=infracost.yml \
-            --terraform-init-flags="-backend=false" \
             --format=json \
             --out-file=/tmp/infracost-base.json
 
@@ -63,7 +63,6 @@ jobs:
         run: |
           infracost diff \
             --config-file=infracost.yml \
-            --terraform-init-flags="-backend=false" \
             --format=json \
             --compare-to=/tmp/infracost-base.json \
             --out-file=/tmp/infracost.json
@@ -105,5 +104,4 @@ jobs:
         run: |
           infracost breakdown \
             --config-file=infracost.yml \
-            --terraform-init-flags="-backend=false" \
             --format=table
