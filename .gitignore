@@ -33,6 +33,9 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Infracost local cache
+.infracost/
+
 #Custom
 tf_console.tf
 *.log

@@ -45,7 +45,7 @@ jobs:
       - name: Generate cost estimate baseline
         run: |
           infracost breakdown \
-            --config-file=infracost.yml \
+            --config-file=tools/infracost.yml \
             --format=json \
             --out-file=/tmp/infracost-base.json
 
@@ -62,7 +62,7 @@ jobs:
       - name: Generate cost diff
         run: |
           infracost diff \
-            --config-file=infracost.yml \
+            --config-file=tools/infracost.yml \
             --format=json \
             --compare-to=/tmp/infracost-base.json \
             --out-file=/tmp/infracost.json
@@ -103,5 +103,5 @@ jobs:
       - name: Generate baseline breakdown
         run: |
           infracost breakdown \
-            --config-file=infracost.yml \
+            --config-file=tools/infracost.yml \
             --format=table
