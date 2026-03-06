@@ -20,7 +20,7 @@ jobs:
   # Job 1: Run on PRs — generate cost diff and post a comment
   # -----------------------------------------------------------------------
   infracost:
-    name: Infracost PR comment
+    name: Infracost PR Comment
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -82,7 +82,7 @@ jobs:
   # Job 2: Check terraform-docs are up to date on PRs
   # -----------------------------------------------------------------------
   terraform-docs:
-    name: terraform-docs
+    name: Terraform Docs
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -110,7 +110,7 @@ jobs:
   # Job 3: Lint Terraform on PRs
   # -----------------------------------------------------------------------
   tflint:
-    name: tflint
+    name: TFLINT
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -142,7 +142,7 @@ jobs:
   # Job 4: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
-    name: Infracost baseline update
+    name: Infracost Baseline Update
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
