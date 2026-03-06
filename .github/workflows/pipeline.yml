@@ -44,8 +44,9 @@ jobs:
 
       - name: Generate cost estimate baseline
         run: |
+          CONFIG=$([ -f tools/infracost.yml ] && echo tools/infracost.yml || echo infracost.yml)
           infracost breakdown \
-            --config-file=tools/infracost.yml \
+            --config-file=$CONFIG \
             --format=json \
             --out-file=/tmp/infracost-base.json
 
