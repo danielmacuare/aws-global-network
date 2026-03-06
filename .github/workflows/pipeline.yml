@@ -78,7 +78,35 @@ jobs:
             --behavior=update
 
   # -----------------------------------------------------------------------
-  # Job 2: Run on push to main — update the baseline breakdown
+  # Job 2: Check terraform-docs are up to date on PRs
+  # -----------------------------------------------------------------------
+  terraform-docs:
+    name: terraform-docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Run terraform-docs check
+        uses: terraform-docs/gh-actions@v1
+        with:
+          working-dir: >-
+            modules/create-ec2,
+            modules/create-key-pair,
+            modules/create-tgw,
+            modules/create-tgw-vpc-attachment,
+            modules/create-vpc,
+            modules/security
+          output-file: README.md
+          output-method: inject
+          fail-on-diff: true
+
+  # -----------------------------------------------------------------------
+  # Job 3: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
     name: Infracost baseline update
