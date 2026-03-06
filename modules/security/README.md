@@ -7,6 +7,7 @@ Creates security groups for bastion and private EC2 instances and network ACLs f
 
 | Name | Version |
 |------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31.0 |
 
 ## Providers

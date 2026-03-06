@@ -43,10 +43,8 @@ No modules.
 | <a name="input_private_subnets"></a> [private\_subnets](#input\_private\_subnets) | Map of private subnets for private instances | `map(any)` | n/a | yes |
 | <a name="input_public_security_group_id"></a> [public\_security\_group\_id](#input\_public\_security\_group\_id) | Security group ID for bastion instances (uses VPC default if not provided) | `string` | `null` | no |
 | <a name="input_public_subnets"></a> [public\_subnets](#input\_public\_subnets) | Map of public subnets for bastion instances | `map(any)` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | Target Region to deploy the resources | `string` | n/a | yes |
 | <a name="input_region_short"></a> [region\_short](#input\_region\_short) | (Shorter Version) Target Region to deploy the resources. ie. use1, use2, euw2, etc | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where EC2 instances will be created (needed to find default security group) | `string` | n/a | yes |
-| <a name="input_vpc_name"></a> [vpc\_name](#input\_vpc\_name) | Name of the VPC | `string` | n/a | yes |
 
 ## Outputs
 

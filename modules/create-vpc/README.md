@@ -54,7 +54,6 @@ No modules.
 | <a name="input_environment"></a> [environment](#input\_environment) | Target environment to deploy the resources. i.e prod, dev, stage, etc | `string` | n/a | yes |
 | <a name="input_private_subnets"></a> [private\_subnets](#input\_private\_subnets) | Map including private subnets, their AZs and their CIDRs | `map(map(string))` | n/a | yes |
 | <a name="input_public_subnets"></a> [public\_subnets](#input\_public\_subnets) | Map including public subnets, their AZs and their CIDRs | `map(map(string))` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | Target Region to deploy the resources | `string` | n/a | yes |
 | <a name="input_region_short"></a> [region\_short](#input\_region\_short) | (Shorter Version) Target Region to deploy the resources. ie. use1, use2, euw2, etc | `string` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | CIDR for the VPC | `string` | n/a | yes |
 | <a name="input_vpc_name"></a> [vpc\_name](#input\_vpc\_name) | Name of the VPC | `string` | n/a | yes |
