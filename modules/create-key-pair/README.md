@@ -9,6 +9,7 @@ Generates an RSA 4096-bit TLS key pair, stores the private key locally as a PEM 
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >=1.1.7 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31.0 |
+| <a name="requirement_local"></a> [local](#requirement\_local) | >= 2.0.0 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | >= 3.0.0 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | >= 4.0.0 |
 

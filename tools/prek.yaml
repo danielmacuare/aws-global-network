@@ -3,6 +3,8 @@ repos:
     rev: v1.105.0
     hooks:
       - id: terraform_tflint
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/tools/.tflint.hcl
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md

@@ -4,11 +4,6 @@ variable "default_tags" {
 }
 
 ## Regional Vars
-variable "region" {
-  type        = string
-  description = "Target Region to deploy the resources"
-}
-
 variable "region_short" {
   type        = string
   description = "(Shorter Version) Target Region to deploy the resources. ie. use1, use2, euw2, etc"

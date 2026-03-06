@@ -107,7 +107,39 @@ jobs:
           fail-on-diff: true
 
   # -----------------------------------------------------------------------
-  # Job 3: Run on push to main — update the baseline breakdown
+  # Job 3: Lint Terraform on PRs
+  # -----------------------------------------------------------------------
+  tflint:
+    name: tflint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.53.0
+
+      - name: Init tflint (download AWS ruleset plugin)
+        run: tflint --init --config=tools/.tflint.hcl
+
+      - name: Run tflint across all Terraform directories
+        run: |
+          set -euo pipefail
+          FAILED=0
+          while IFS= read -r dir; do
+            echo "==> Linting: $dir"
+            tflint --config="$GITHUB_WORKSPACE/tools/.tflint.hcl" --chdir="$dir" || FAILED=1
+          done < <(find modules envs -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
+          exit $FAILED
+
+  # -----------------------------------------------------------------------
+  # Job 4: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
     name: Infracost baseline update
