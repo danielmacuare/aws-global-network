@@ -50,7 +50,7 @@ ssh-keys/
 # Python
 *.pyc
 __pycache__/
-uv.lock
+/.venv
 
 # Generated instance inventory
 instances.json
