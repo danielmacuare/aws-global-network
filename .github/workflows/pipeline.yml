@@ -139,7 +139,62 @@ jobs:
           exit $FAILED
 
   # -----------------------------------------------------------------------
-  # Job 4: Run on push to main — update the baseline breakdown
+  # Job 4: Checkov static security analysis on PRs
+  # -----------------------------------------------------------------------
+  checkov:
+    name: Checkov
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: .python-version
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      - name: Run Checkov
+        run: |
+          uv run checkov \
+            --config-file tools/.checkov.yaml \
+            --directory . \
+            --soft-fail-on LOW,MEDIUM \
+            --hard-fail-on HIGH,CRITICAL
+
+  # -----------------------------------------------------------------------
+  # Job 5: Trivy IaC misconfiguration scan on PRs
+  # -----------------------------------------------------------------------
+  trivy:
+    name: Trivy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: config
+          scan-ref: .
+          trivy-config: tools/trivy.yaml
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+
+  # -----------------------------------------------------------------------
+  # Job 6: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
     name: Infracost Baseline Update

@@ -1,0 +1,14 @@
+# Intentional design choices for non-production network test infrastructure.
+# See specs/09-connectivity-test-plan.md for context.
+
+# AWS-0028: EC2 IMDS does not require token — test instances, not hardened
+AVD-AWS-0028
+
+# AWS-0102: NACL rule allows all ports — required for ICMP connectivity tests across TGW
+AVD-AWS-0102
+
+# AWS-0104: SG unrestricted egress — required for test EC2s to reach remote cells
+AVD-AWS-0104
+
+# AWS-0107: SG unrestricted ingress — bastion must accept SSH/ICMP from the internet
+AVD-AWS-0107
