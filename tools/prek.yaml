@@ -10,3 +10,24 @@ repos:
           - --hook-config=--path-to-file=README.md
           - --hook-config=--add-apache-2-license-copyright-header=false
           - --hook-config=--create-file-if-not-exist=true
+
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 3.2.434
+    hooks:
+      - id: checkov
+        args:
+          - --config-file=tools/.checkov.yaml
+
+  - repo: local
+    hooks:
+      - id: trivy
+        name: Trivy IaC misconfiguration scan
+        language: system
+        entry: trivy
+        args:
+          - config
+          - --config=tools/trivy.yaml
+          - --quiet
+          - .
+        types: [terraform]
+        pass_filenames: false
