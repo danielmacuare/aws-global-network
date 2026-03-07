@@ -142,7 +142,7 @@ jobs:
   # Job 4: Checkov static security analysis on PRs
   # -----------------------------------------------------------------------
   checkov:
-    name: Checkov
+    name: CHECKOV
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -173,7 +173,7 @@ jobs:
   # Job 5: Trivy IaC misconfiguration scan on PRs
   # -----------------------------------------------------------------------
   trivy:
-    name: Trivy
+    name: TRIVY
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -184,7 +184,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Run Trivy config scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.34.2
         with:
           scan-type: config
           scan-ref: .
