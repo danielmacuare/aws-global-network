@@ -1,0 +1,48 @@
+framework:
+  - terraform
+
+compact: true
+quiet: true
+
+skip-check:
+  # --- Intentional design choices for network test infrastructure ---
+  - CKV_AWS_25    # SG: SSH open to 0.0.0.0/0 — bastion design is intentional
+  - CKV_AWS_24    # SG: Telnet open — pre-emptive skip for non-applicable SG checks
+  - CKV_AWS_277   # SG: ingress from 0.0.0.0/0 on all ports — intentional for bastion ICMP
+  - CKV_AWS_382   # SG: egress to 0.0.0.0/0 on all ports — intentional for test EC2s
+  - CKV2_AWS_5    # SG: not attached to a resource — module-level; attachment happens at env level
+  - CKV_AWS_232   # NACL: SSH ingress from 0.0.0.0/0 — required for bastion access
+  - CKV_AWS_352   # NACL: all-port ingress rules — required for ICMP connectivity tests
+  - CKV2_AWS_1    # NACL: not attached to subnets — module-level; attachment happens at env level
+  - CKV_AWS_88    # EC2: public IP on bastion — intentional; bastion must be internet-reachable
+  # --- EC2 hardening not applicable to short-lived test instances ---
+  - CKV_AWS_79    # EC2: IMDSv2 not enforced
+  - CKV_AWS_126   # EC2: detailed monitoring disabled — unnecessary cost for test instances
+  - CKV_AWS_135   # EC2: not EBS optimized — test instances do not require optimized I/O
+  - CKV_AWS_8     # EC2: EBS not encrypted at launch config level
+  - CKV_AWS_189   # EC2: EBS not encrypted with CMK (default key used)
+  - CKV2_AWS_41   # EC2: no IAM instance profile — test instances need no AWS API access
+  # --- VPC / networking controls not required for test lab ---
+  - CKV2_AWS_11   # VPC: Flow Logs not enabled
+  - CKV2_AWS_12   # VPC: default security group not restricted
+  # --- Resource types not present in this repo ---
+  - CKV_AWS_18    # S3: access logging
+  - CKV_AWS_19    # S3: encryption
+  - CKV_AWS_20    # S3: public access - READ
+  - CKV_AWS_21    # S3: versioning
+  - CKV2_AWS_6    # S3: public access block
+  - CKV2_AWS_62   # S3: event notifications
+  - CKV_AWS_9     # IAM: password policy - minimum length
+  - CKV_AWS_10    # IAM: password policy - symbols
+  - CKV_AWS_11    # IAM: password policy - numbers
+  - CKV_AWS_12    # IAM: password policy - uppercase
+  - CKV_AWS_13    # IAM: password policy - lowercase
+  - CKV_AWS_14    # IAM: password policy - reuse
+  - CKV_AWS_15    # IAM: password policy - expiry
+  - CKV_AWS_16    # IAM: password policy - age
+  - CKV_AWS_35    # CloudTrail: logging enabled
+  - CKV_AWS_36    # CloudTrail: log file validation
+  - CKV_AWS_67    # CloudTrail: CloudWatch integration
+  - CKV_AWS_66    # Security Hub not enabled
+  - CKV2_AWS_48   # GuardDuty not enabled
+  - CKV_AWS_32    # EBS snapshot not public
