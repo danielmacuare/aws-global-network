@@ -10,6 +10,7 @@ severity:
   - HIGH
   - CRITICAL
 
+format: table
 exit-code: 1
 
 skip-dirs:

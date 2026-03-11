@@ -187,9 +187,6 @@ jobs:
           scan-type: config
           scan-ref: .
           trivy-config: tools/trivy.yaml
-          format: table
-          exit-code: '1'
-          severity: HIGH,CRITICAL
 
   # -----------------------------------------------------------------------
   # Job 6: Run on push to main — update the baseline breakdown
