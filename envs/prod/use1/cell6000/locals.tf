@@ -15,21 +15,4 @@ locals {
     cell_name            = local.cell_name
   }
 
-  private_subnets = {
-    priv-0 = {
-      az          = "${local.region}a"
-      cidr        = "10.48.0.0/24"
-      nat_gateway = true
-    }
-    priv-1 = {
-      az          = "${local.region}b"
-      cidr        = "10.48.1.0/24"
-      nat_gateway = true
-    }
-    priv-2 = {
-      az          = "${local.region}c"
-      cidr        = "10.48.2.0/24"
-      nat_gateway = true
-    }
-  }
 }

@@ -4,6 +4,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   pull-requests: write
@@ -20,7 +21,7 @@ jobs:
   # Job 1: Run on PRs — generate cost diff and post a comment
   # -----------------------------------------------------------------------
   infracost:
-    name: Infracost PR comment
+    name: Infracost - PR Comment
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -44,8 +45,9 @@ jobs:
 
       - name: Generate cost estimate baseline
         run: |
+          CONFIG=$([ -f tools/infracost.yml ] && echo tools/infracost.yml || echo infracost.yml)
           infracost breakdown \
-            --config-file=infracost.yml \
+            --config-file=$CONFIG \
             --format=json \
             --out-file=/tmp/infracost-base.json
 
@@ -62,7 +64,7 @@ jobs:
       - name: Generate cost diff
         run: |
           infracost diff \
-            --config-file=infracost.yml \
+            --config-file=tools/infracost.yml \
             --format=json \
             --compare-to=/tmp/infracost-base.json \
             --out-file=/tmp/infracost.json
@@ -78,10 +80,117 @@ jobs:
             --behavior=update
 
   # -----------------------------------------------------------------------
-  # Job 2: Run on push to main — update the baseline breakdown
+  # Job 2: Check terraform-docs are up to date on PRs
+  # -----------------------------------------------------------------------
+  terraform-docs:
+    name: Terraform Docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run terraform-docs check
+        uses: terraform-docs/gh-actions@v1
+        with:
+          working-dir: >-
+            modules/create-ec2,
+            modules/create-key-pair,
+            modules/create-tgw,
+            modules/create-tgw-vpc-attachment,
+            modules/create-vpc,
+            modules/security
+          output-file: README.md
+          output-method: inject
+          fail-on-diff: false
+          git-push: true # Automatically commit the fix to the PR
+
+  # -----------------------------------------------------------------------
+  # Job 3: Validate Terraform on PRs
+  # -----------------------------------------------------------------------
+  terraform-validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Run terraform validate across all Terraform directories
+        run: |
+          set -euo pipefail
+          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
+            xargs -P "$(nproc)" -I{} sh -c \
+              'echo "==> Validating: {}" && terraform -chdir="{}" init -backend=false -input=false -no-color && terraform -chdir="{}" validate -no-color'
+
+  # -----------------------------------------------------------------------
+  # Job 4: Lint Terraform on PRs
+  # -----------------------------------------------------------------------
+  tflint:
+    name: Linting - TFLINT
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.61.0
+
+      - name: Init tflint (download AWS ruleset plugin)
+        run: tflint --init --config=tools/.tflint.hcl
+
+      - name: Run tflint across all Terraform directories
+        run: |
+          set -euo pipefail
+          export TFLINT_CONFIG="$GITHUB_WORKSPACE/tools/.tflint.hcl"
+          find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
+            xargs -P "$(nproc)" -I{} sh -c \
+              'echo "==> Linting: {}" && tflint --config="$TFLINT_CONFIG" --chdir="{}"'
+
+  # -----------------------------------------------------------------------
+  # Job 5: Checkov static security analysis on PRs
+  # -----------------------------------------------------------------------
+  checkov:
+    name: Static Code Analysis - CHECKOV
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: .python-version
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      - name: Run Checkov
+        run: |
+          uv run checkov \
+            --config-file tools/.checkov.yaml \
+            --soft-fail-on LOW,MEDIUM \
+            --hard-fail-on HIGH,CRITICAL
+
+  # -----------------------------------------------------------------------
+  # Job 6: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
-    name: Infracost baseline update
+    name: Infracost - Baseline Update
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
@@ -103,5 +212,5 @@ jobs:
       - name: Generate baseline breakdown
         run: |
           infracost breakdown \
-            --config-file=infracost.yml \
+            --config-file=tools/infracost.yml \
             --format=table

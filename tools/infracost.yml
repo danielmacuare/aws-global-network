@@ -1,0 +1,128 @@
+version: 0.1
+
+projects:
+  # dev / eu-west-2
+  - path: envs/dev/euw2/cell1000
+    name: dev-euw2-cell1000
+    dependency_paths:
+      - modules/**
+  - path: envs/dev/euw2/cell1001
+    name: dev-euw2-cell1001
+    dependency_paths:
+      - modules/**
+
+  # dev / eu-west-1
+  - path: envs/dev/euw1/cell3000
+    name: dev-euw1-cell3000
+    dependency_paths:
+      - modules/**
+  - path: envs/dev/euw1/cell3001
+    name: dev-euw1-cell3001
+    dependency_paths:
+      - modules/**
+
+  # dev / us-east-1
+  - path: envs/dev/use1/cell7000
+    name: dev-use1-cell7000
+    dependency_paths:
+      - modules/**
+  - path: envs/dev/use1/cell7001
+    name: dev-use1-cell7001
+    dependency_paths:
+      - modules/**
+
+  # dev / us-west-2
+  - path: envs/dev/usw2/cell5000
+    name: dev-usw2-cell5000
+    dependency_paths:
+      - modules/**
+  - path: envs/dev/usw2/cell5001
+    name: dev-usw2-cell5001
+    dependency_paths:
+      - modules/**
+
+  # prod / eu-west-2
+  - path: envs/prod/euw2/cell0000
+    name: prod-euw2-cell0000
+    dependency_paths:
+      - modules/**
+  - path: envs/prod/euw2/cell0001
+    name: prod-euw2-cell0001
+    dependency_paths:
+      - modules/**
+
+  # prod / eu-west-1
+  - path: envs/prod/euw1/cell2000
+    name: prod-euw1-cell2000
+    dependency_paths:
+      - modules/**
+  - path: envs/prod/euw1/cell2001
+    name: prod-euw1-cell2001
+    dependency_paths:
+      - modules/**
+
+  # prod / us-east-1
+  - path: envs/prod/use1/cell6000
+    name: prod-use1-cell6000
+    dependency_paths:
+      - modules/**
+  - path: envs/prod/use1/cell6001
+    name: prod-use1-cell6001
+    dependency_paths:
+      - modules/**
+
+  # prod / us-west-2
+  - path: envs/prod/usw2/cell4000
+    name: prod-usw2-cell4000
+    dependency_paths:
+      - modules/**
+  - path: envs/prod/usw2/cell4001
+    name: prod-usw2-cell4001
+    dependency_paths:
+      - modules/**
+
+  # networking / eu-west-2
+  - path: envs/networking/euw2/tgw
+    name: networking-euw2-tgw
+    dependency_paths:
+      - modules/**
+  - path: envs/networking/euw2/tgw-vpc-atts
+    name: networking-euw2-tgw-vpc-atts
+    dependency_paths:
+      - modules/**
+
+  # networking / eu-west-1
+  - path: envs/networking/euw1/tgw
+    name: networking-euw1-tgw
+    dependency_paths:
+      - modules/**
+  - path: envs/networking/euw1/tgw-vpc-atts
+    name: networking-euw1-tgw-vpc-atts
+    dependency_paths:
+      - modules/**
+
+  # networking / us-east-1
+  - path: envs/networking/use1/tgw
+    name: networking-use1-tgw
+    dependency_paths:
+      - modules/**
+  - path: envs/networking/use1/tgw-vpc-atts
+    name: networking-use1-tgw-vpc-atts
+    dependency_paths:
+      - modules/**
+
+  # networking / us-west-2
+  - path: envs/networking/usw2/tgw
+    name: networking-usw2-tgw
+    dependency_paths:
+      - modules/**
+  - path: envs/networking/usw2/tgw-vpc-atts
+    name: networking-usw2-tgw-vpc-atts
+    dependency_paths:
+      - modules/**
+
+  # networking / global
+  - path: envs/networking/global/tgw-peering
+    name: networking-global-tgw-peering
+    dependency_paths:
+      - modules/**
