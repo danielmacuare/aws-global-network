@@ -46,42 +46,42 @@ flowchart TD
 
         subgraph IC[Job 1 · Infracost PR Comment]
             IC1[Checkout main branch] --> IC2[AWS OIDC auth]
-            IC2 --> IC3[infracost breakdown\nbase-cost.json]
+            IC2 --> IC3[infracost breakdown<br/>base-cost.json]
             IC3 --> IC4[Checkout PR branch]
             IC4 --> IC5[AWS OIDC auth]
-            IC5 --> IC6[infracost diff\npr-cost.json]
-            IC6 --> IC7[Post / update PR comment\nwith cost delta]
+            IC5 --> IC6[infracost diff<br/>pr-cost.json]
+            IC6 --> IC7[Post / update PR comment<br/>with cost delta]
         end
 
         subgraph TD[Job 2 · Terraform Docs]
-            TD1[Checkout PR branch] --> TD2[terraform-docs check\nacross all modules]
+            TD1[Checkout PR branch] --> TD2[terraform-docs check<br/>across all modules]
             TD2 --> TD3{Diff found?}
-            TD3 -- Yes --> TD4[Auto-commit fix\nback to PR branch]
+            TD3 -- Yes --> TD4[Auto-commit fix<br/>back to PR branch]
             TD3 -- No --> TD5[Pass]
         end
 
         subgraph TV[Job 3 · Terraform Validate]
             TV1[Checkout PR branch] --> TV2[Setup Terraform 1.14.4]
-            TV2 --> TV3[Restore provider cache\nactions/cache keyed on lock file hashes]
+            TV2 --> TV3[Restore provider cache<br/>actions/cache keyed on lock file hashes]
             TV3 --> TV4{Cache hit?}
-            TV4 -- Miss --> TV5[Pre-warm cache\nsequential terraform init]
-            TV4 -- Hit --> TV6[Parallel terraform init + validate\nxargs -P nproc]
+            TV4 -- Miss --> TV5[Pre-warm cache<br/>sequential terraform init]
+            TV4 -- Hit --> TV6[Parallel terraform init + validate<br/>xargs -P nproc]
             TV5 --> TV6
         end
 
         subgraph TL[Job 4 · TFLint]
             TL1[Checkout PR branch] --> TL2[Install tflint v0.61.0]
-            TL2 --> TL3[tflint --init\ndownload AWS ruleset]
-            TL3 --> TL4[Find all .tf dirs\nin bootstrap / envs / modules]
-            TL4 --> TL5[tflint --chdir\nin parallel]
+            TL2 --> TL3[tflint --init<br/>download AWS ruleset]
+            TL3 --> TL4[Find all .tf dirs<br/>in bootstrap / envs / modules]
+            TL4 --> TL5[tflint --chdir<br/>in parallel]
         end
 
         subgraph CK[Job 5 · Checkov]
             CK1[Checkout PR branch] --> CK2[Install uv + Python deps]
-            CK2 --> CK3[uv run checkov\n--config-file tools/.checkov.yaml]
+            CK2 --> CK3[uv run checkov<br/>--config-file tools/.checkov.yaml]
             CK3 --> CK4{Severity?}
-            CK4 -- HIGH / CRITICAL --> CK5[Hard fail\nblocks merge]
-            CK4 -- LOW / MEDIUM --> CK6[Soft fail\nreported only]
+            CK4 -- HIGH / CRITICAL --> CK5[Hard fail<br/>blocks merge]
+            CK4 -- LOW / MEDIUM --> CK6[Soft fail<br/>reported only]
             CK4 -- None --> CK7[Pass]
         end
     end
@@ -91,7 +91,7 @@ flowchart TD
 
         subgraph IB[Job 6 · Infracost Baseline Update]
             IB1[Checkout main] --> IB2[AWS OIDC auth]
-            IB2 --> IB3[infracost breakdown\nformat=table]
+            IB2 --> IB3[infracost breakdown<br/>format=table]
         end
     end
 ```

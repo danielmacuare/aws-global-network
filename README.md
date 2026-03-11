@@ -1,7 +1,7 @@
 
 # aws-global-network
 
-![GH Actions workflow](https://github.com/danielmacuare/aws-poc/actions/workflows/pipeline.yml/badge.svg)
+![GH Actions workflow](https://github.com/danielmacuare/aws-global-network/actions/workflows/pipeline.yml/badge.svg)
 
 This project builds a global network architecture using AWS Transit Gateway spanning multiple regions. The infrastructure is managed using Terraform modules with environment-specific configurations.
 
@@ -31,7 +31,12 @@ A full-mesh Transit Gateway network across 4 regions (eu-west-2, eu-west-1, us-w
 │   ├── prod/              # Production environment (cells per region)
 │   └── networking/        # TGWs, TGW-VPC attachments, TGW peering
 ├── modules/               # Reusable Terraform modules
-│   └── create-vpc/        # VPC creation module
+│   ├── create-ec2/        # Bastion and private EC2 instances
+│   ├── create-key-pair/   # RSA key pair generation and AWS registration
+│   ├── create-tgw/        # Transit Gateway with prod/dev/wan route tables
+│   ├── create-tgw-vpc-attachment/ # TGW-VPC attachment and route propagation
+│   ├── create-vpc/        # VPC with public/private subnets, NAT, IPv6
+│   └── security/          # Security groups and network ACLs
 ├── scripts/               # Python deployment orchestration scripts
 ├── specs/                 # Feature planning and implementation history
 ├── vars/                  # Shared variable definitions
@@ -63,6 +68,7 @@ A full-mesh Transit Gateway network across 4 regions (eu-west-2, eu-west-1, us-w
 - [Infracost](docs/dev/tools/infracost.md) — cost estimation on PRs
 - [Prek](docs/dev/tools/prek.md) — pre-commit hooks
 - [terraform-docs](docs/dev/tools/terraform-docs.md) — auto-generated module documentation
+- [tf-validate](docs/dev/tools/tf-validate.md) — parallel Terraform validate with timing output
 - [tflint](docs/dev/tools/tflint.md) — Terraform linter
 - [uv](docs/dev/tools/uv.md) — Python dependency management
 
@@ -70,10 +76,15 @@ A full-mesh Transit Gateway network across 4 regions (eu-west-2, eu-west-1, us-w
 
 The project includes a GitHub Actions pipeline (`pipeline.yml`) that runs on pushes to `main` and pull requests. Pipeline jobs include Terraform validate, tflint, terraform-docs, Checkov security scanning, and Infracost cost estimation with PR comments.
 
+See [CI Pipeline](docs/dev/tools/ci-pipeline.md) for a full job breakdown, Mermaid diagram, and AWS OIDC authentication details.
+
 ## Modules
 
-- **[create-vpc](modules/create-vpc/README.md)**: Creates VPC with public/private subnets, route tables, and NAT gateways
-
-## Planning History
-
-Feature implementation plans are tracked in [specs/](specs/index.md).
+| Module | Description |
+|--------|-------------|
+| [create-ec2](modules/create-ec2/README.md) | Bastion (public) and private EC2 instances using Ubuntu 24.04 LTS |
+| [create-key-pair](modules/create-key-pair/README.md) | RSA 4096-bit key pair generation and AWS EC2 registration |
+| [create-tgw](modules/create-tgw/README.md) | Transit Gateway with prod, dev, and wan route tables |
+| [create-tgw-vpc-attachment](modules/create-tgw-vpc-attachment/README.md) | TGW-VPC attachment, route table association, and supernet route propagation |
+| [create-vpc](modules/create-vpc/README.md) | VPC with public/private subnets, Internet Gateway, NAT Gateway, and IPv6 egress |
+| [security](modules/security/README.md) | Security groups and network ACLs for bastion and private instances |

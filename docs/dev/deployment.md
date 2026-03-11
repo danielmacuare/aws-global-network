@@ -62,12 +62,12 @@ flowchart TD
         A4[networking/use1/tgw-vpc-atts]
     end
 
-    P2 --> Gate{"TGW Peering\nReadiness Gate"}
+    P2 --> Gate{"TGW Peering<br/>Readiness Gate"}
     Gate -->|All TGWs ready| P3
-    Gate -->|Not ready| Skip([Skip Phase 3\nnon-fatal])
+    Gate -->|Not ready| Skip([Skip Phase 3<br/>non-fatal])
 
     subgraph P3["Phase 3: TGW Peering — sequential"]
-        PCX[networking/global/tgw-peering\n6 peering attachments\n24 static routes]
+        PCX[networking/global/tgw-peering<br/>6 peering attachments<br/>24 static routes]
     end
 
     P3 --> Inventory[Instance Inventory]
