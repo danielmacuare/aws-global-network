@@ -57,7 +57,7 @@ done < <(find modules envs -name '*.tf' -not -path '*/.terraform/*' -printf '%h\
 The `tflint` job in [`.github/workflows/pipeline.yml`](../../.github/workflows/pipeline.yml) runs on every pull request. It:
 
 1. Checks out the PR branch.
-2. Installs tflint `v0.53.0` via the official `terraform-linters/setup-tflint@v4` action.
+2. Installs tflint `v0.61.0` via the official `terraform-linters/setup-tflint@v4` action.
 3. Runs `tflint --init` to download the AWS ruleset plugin declared in `tools/.tflint.hcl`.
 4. Discovers every directory under `modules/` and `envs/` that contains `.tf` files (excluding `.terraform/` subdirectories) and lints each one.
 5. Accumulates failures across all directories before exiting — all lint errors are reported in a single run rather than stopping at the first failing directory.

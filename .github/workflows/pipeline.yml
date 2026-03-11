@@ -123,7 +123,7 @@ jobs:
       - name: Install tflint
         uses: terraform-linters/setup-tflint@v4
         with:
-          tflint_version: v0.53.0
+          tflint_version: v0.61.0
 
       - name: Init tflint (download AWS ruleset plugin)
         run: tflint --init --config=tools/.tflint.hcl
