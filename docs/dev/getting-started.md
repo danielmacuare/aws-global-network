@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Terraform**: Version >= 1.2.1
+- **Terraform**: Version >= 1.14.4 — use [tfenv](https://github.com/tfutils/tfenv) to manage versions locally. The repo root contains a `.terraform-version` file; `tfenv` picks it up automatically so `terraform` on your PATH always matches the CI version.
 - **AWS CLI**: Configured with appropriate credentials
 - **AWS Account**: With permissions to create VPCs, subnets, route tables, and Transit Gateways
 - **S3 Bucket**: For Terraform state storage (update `backend.tf` with your bucket name)
@@ -13,7 +13,7 @@
 
 ```bash
 git clone <repository-url>
-cd aws-poc
+cd aws-global-network
 ```
 
 ### 2. Configure Backend Storage
@@ -40,6 +40,26 @@ region_short = "euw2"
 environment      = "dev"
 ```
 
+## Terraform Version Management
+
+The `.terraform-version` file at the repo root pins the Terraform CLI to `1.14.4`. If you use [tfenv](https://github.com/tfutils/tfenv), it reads this file automatically:
+
+```bash
+tfenv install   # installs the version in .terraform-version
+tfenv use       # switches to it
+terraform version  # should print 1.14.4
+```
+
+## Provider Lock Files
+
+Every Terraform directory has a committed `.terraform.lock.hcl` file that pins exact provider versions. These lock files contain checksums for **both** `darwin_arm64` (local Mac) and `linux_amd64` (CI runners). If you upgrade a provider, regenerate checksums for both platforms:
+
+```bash
+terraform providers lock -platform=linux_amd64 -platform=darwin_arm64
+```
+
+Run this in every affected directory and commit the updated lock files.
+
 ## Development Workflow
 
 ### Before Making Changes
@@ -48,11 +68,11 @@ environment      = "dev"
 # Format Terraform files
 terraform fmt -recursive
 
-# Validate configuration
-terraform validate
+# Validate all Terraform directories in parallel (with timing output)
+uv run --project scripts/ python scripts/tf_validate.py
 
-# Check for security issues (if tfsec is installed)
-tfsec .
+# Run all pre-commit hooks against all files
+prek -c tools/prek.yaml run --all-files
 ```
 
 ### Making Changes

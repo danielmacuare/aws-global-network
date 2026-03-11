@@ -18,8 +18,10 @@ GitHub Actions does not use stored AWS keys. Instead it uses OpenID Connect (OID
 
 ```
 GitHub secret required: AWS_OIDC_ROLE_ARN
-Role: arn:aws:iam::REDACTED_ACCOUNT_ID:role/github-actions-infracost
+Role: arn:aws:iam::<YOUR_AWS_ACCOUNT_ID>:role/github-actions-infracost
 ```
+
+> The account ID is intentionally omitted from this file. Set the full ARN as the `AWS_OIDC_ROLE_ARN` secret in **GitHub → Settings → Secrets and variables → Actions**.
 
 ## Workflow diagram
 

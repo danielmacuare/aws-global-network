@@ -383,6 +383,5 @@ After deploying VPC attachments:
 
 ## Related Documentation
 
-- [Transit Gateway Core Module](./features/tgw-module.md)
-- [Transit Gateway Design Decisions](./design/tgws.md)
+- [Transit Gateway Design Decisions](./tgws.md)
 - [AWS TGW VPC Attachments](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-vpc-attachments.html)

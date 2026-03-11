@@ -7,7 +7,7 @@ Creates a fully-featured VPC with public and private subnets across availability
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >=1.1.7 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.14.4 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31.0 |
 | <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | >= 1.70.0 |
 | <a name="requirement_time"></a> [time](#requirement\_time) | >= 0.9.0 |
@@ -16,8 +16,8 @@ Creates a fully-featured VPC with public and private subnets across availability
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.31.0 |
-| <a name="provider_awscc"></a> [awscc](#provider\_awscc) | 1.70.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
+| <a name="provider_awscc"></a> [awscc](#provider\_awscc) | 1.74.0 |
 | <a name="provider_time"></a> [time](#provider\_time) | 0.13.1 |
 
 ## Modules

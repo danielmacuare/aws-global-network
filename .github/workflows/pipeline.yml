@@ -30,6 +30,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          version: "v0.10.43"
 
       # Checkout the base branch to generate the cost baseline
       - name: Checkout base branch
@@ -94,6 +95,7 @@ jobs:
       - name: Run terraform-docs check
         uses: terraform-docs/gh-actions@v1
         with:
+          version: "v0.21.0"
           working-dir: >-
             modules/create-ec2,
             modules/create-key-pair,
@@ -120,12 +122,40 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.4"
+
+      - name: Cache Terraform providers
+        id: cache-providers
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: terraform-providers-${{ runner.os }}-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-providers-${{ runner.os }}-
+
+      # On a cache miss, populate the cache sequentially first.
+      # This avoids the "text file busy" race condition that occurs when multiple
+      # parallel terraform init processes try to write the same provider binary
+      # to a shared cache directory simultaneously.
+      - name: Pre-warm provider cache
+        if: steps.cache-providers.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.terraform.d/plugin-cache"
+          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+          export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true
+          find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
+            while read -r dir; do
+              echo "==> Warming: $dir"
+              terraform -chdir="$dir" init -backend=false -input=false -no-color
+            done
 
       - name: Run terraform validate across all Terraform directories
         run: |
           set -euo pipefail
           export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
-          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true
           find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
             xargs -P "$(nproc)" -I{} sh -c \
               'echo "==> Validating: {}" && terraform -chdir="{}" init -backend=false -input=false -no-color && terraform -chdir="{}" validate -no-color'
@@ -199,6 +229,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          version: "v0.10.43"
 
       - name: Checkout
         uses: actions/checkout@v4

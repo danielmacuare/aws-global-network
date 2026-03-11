@@ -49,6 +49,23 @@ python scripts/deploy.py --tgw-wait 60           # custom TGW stabilisation wait
 
 ---
 
+## Running Validate
+
+```bash
+# Validate all Terraform directories (default parallelism = cpu count)
+uv run --project scripts/ python scripts/tf_validate.py
+
+# Custom parallelism
+uv run --project scripts/ python scripts/tf_validate.py --parallelism 16
+
+# Options
+python scripts/tf_validate.py --help
+```
+
+Runs `terraform validate` in parallel across all directories under `bootstrap/`, `envs/`, and `modules/`. Outputs a table showing each directory, pass/fail status, and how long validation took. Failures are sorted to the top of the table and printed in full at the bottom.
+
+---
+
 ## Running Destroy
 
 ```bash

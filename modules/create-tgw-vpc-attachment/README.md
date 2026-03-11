@@ -7,14 +7,14 @@ Attaches a VPC to an AWS Transit Gateway, associates and propagates the attachme
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.1.7 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.14.4 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.32.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
 
 ## Modules
 
