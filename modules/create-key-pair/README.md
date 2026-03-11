@@ -7,7 +7,7 @@ Generates an RSA 4096-bit TLS key pair, stores the private key locally as a PEM 
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >=1.1.7 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.14.4 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31.0 |
 | <a name="requirement_local"></a> [local](#requirement\_local) | >= 2.0.0 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | >= 3.0.0 |
@@ -17,8 +17,8 @@ Generates an RSA 4096-bit TLS key pair, stores the private key locally as a PEM 
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.31.0 |
-| <a name="provider_local"></a> [local](#provider\_local) | 2.6.2 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
+| <a name="provider_local"></a> [local](#provider\_local) | 2.7.0 |
 | <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | 4.2.1 |
 

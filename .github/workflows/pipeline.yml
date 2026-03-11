@@ -30,6 +30,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          version: "v0.10.43"
 
       # Checkout the base branch to generate the cost baseline
       - name: Checkout base branch
@@ -94,6 +95,7 @@ jobs:
       - name: Run terraform-docs check
         uses: terraform-docs/gh-actions@v1
         with:
+          version: "v0.21.0"
           working-dir: >-
             modules/create-ec2,
             modules/create-key-pair,
@@ -120,6 +122,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.4"
 
       - name: Run terraform validate across all Terraform directories
         run: |
@@ -199,6 +203,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          version: "v0.10.43"
 
       - name: Checkout
         uses: actions/checkout@v4

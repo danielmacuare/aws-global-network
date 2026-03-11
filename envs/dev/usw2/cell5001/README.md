@@ -5,7 +5,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.1 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.14.4 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31.0 |
 | <a name="requirement_awscc"></a> [awscc](#requirement\_awscc) | >= 1.70.0 |
 | <a name="requirement_local"></a> [local](#requirement\_local) | >= 2.0.0 |
@@ -17,7 +17,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.34.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
 
 ## Modules
 

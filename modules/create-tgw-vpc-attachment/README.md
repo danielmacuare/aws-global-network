@@ -14,7 +14,7 @@ Attaches a VPC to an AWS Transit Gateway, associates and propagates the attachme
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.32.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
 
 ## Modules
 

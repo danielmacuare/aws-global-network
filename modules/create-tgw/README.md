@@ -14,7 +14,7 @@ Creates an AWS Transit Gateway with three dedicated route tables (prod, dev, wan
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.32.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
 
 ## Modules
 

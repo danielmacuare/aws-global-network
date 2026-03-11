@@ -13,7 +13,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_awscc"></a> [awscc](#provider\_awscc) | 1.70.0 |
+| <a name="provider_awscc"></a> [awscc](#provider\_awscc) | 1.74.0 |
 
 ## Modules
 
