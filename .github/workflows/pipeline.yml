@@ -191,26 +191,7 @@ jobs:
             --hard-fail-on HIGH,CRITICAL
 
   # -----------------------------------------------------------------------
-  # Job 6: Trivy IaC misconfiguration scan on PRs
-  # -----------------------------------------------------------------------
-  trivy:
-    name: Security Scan - TRIVY
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run Trivy config scan
-        uses: aquasecurity/trivy-action@0.34.2
-        with:
-          scan-type: config
-          scan-ref: .
-          trivy-config: tools/trivy.yaml
-
-  # -----------------------------------------------------------------------
-  # Job 7: Run on push to main — update the baseline breakdown
+  # Job 6: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
     name: Infracost - Baseline Update

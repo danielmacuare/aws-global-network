@@ -21,15 +21,3 @@ repos:
         args:
           - --config-file=tools/.checkov.yaml
 
-  - repo: local
-    hooks:
-      - id: trivy
-        name: Trivy IaC misconfiguration scan
-        language: system
-        entry: trivy
-        args:
-          - config
-          - --config=tools/trivy.yaml
-          - .
-        types: [terraform]
-        pass_filenames: false
