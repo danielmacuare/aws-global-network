@@ -102,10 +102,37 @@ jobs:
             modules/security
           output-file: README.md
           output-method: inject
-          fail-on-diff: true
+          fail-on-diff: false
+          git-push: true # Automatically commit the fix to the PR
 
   # -----------------------------------------------------------------------
-  # Job 3: Lint Terraform on PRs
+  # Job 3: Validate Terraform on PRs
+  # -----------------------------------------------------------------------
+  terraform-validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Run terraform validate across all Terraform directories
+        run: |
+          set -euo pipefail
+          FAILED=0
+          while IFS= read -r dir; do
+            echo "==> Validating: $dir"
+            terraform -chdir="$dir" init -backend=false -input=false && \
+            terraform -chdir="$dir" validate || FAILED=1
+          done < <(find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
+          exit $FAILED
+
+  # -----------------------------------------------------------------------
+  # Job 4: Lint Terraform on PRs
   # -----------------------------------------------------------------------
   tflint:
     name: Linting - TFLINT
@@ -135,7 +162,7 @@ jobs:
           exit $FAILED
 
   # -----------------------------------------------------------------------
-  # Job 4: Checkov static security analysis on PRs
+  # Job 5: Checkov static security analysis on PRs
   # -----------------------------------------------------------------------
   checkov:
     name: Static Code Analysis - CHECKOV
@@ -163,7 +190,7 @@ jobs:
             --hard-fail-on HIGH,CRITICAL
 
   # -----------------------------------------------------------------------
-  # Job 5: Trivy IaC misconfiguration scan on PRs
+  # Job 6: Trivy IaC misconfiguration scan on PRs
   # -----------------------------------------------------------------------
   trivy:
     name: Security Scan - TRIVY
@@ -182,7 +209,7 @@ jobs:
           trivy-config: tools/trivy.yaml
 
   # -----------------------------------------------------------------------
-  # Job 6: Run on push to main — update the baseline breakdown
+  # Job 7: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
     name: Infracost - Baseline Update
