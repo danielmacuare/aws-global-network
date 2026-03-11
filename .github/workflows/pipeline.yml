@@ -87,10 +87,8 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Run terraform-docs check
         uses: terraform-docs/gh-actions@v1
@@ -115,10 +113,8 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install tflint
         uses: terraform-linters/setup-tflint@v4
@@ -147,10 +143,8 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -177,10 +171,8 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Run Trivy config scan
         uses: aquasecurity/trivy-action@0.34.2
