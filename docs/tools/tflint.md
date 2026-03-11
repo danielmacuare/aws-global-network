@@ -49,7 +49,7 @@ tflint --config="$(git rev-parse --show-toplevel)/tools/.tflint.hcl" --chdir=mod
 while IFS= read -r dir; do
   echo "==> Linting: $dir"
   tflint --config="$(git rev-parse --show-toplevel)/tools/.tflint.hcl" --chdir="$dir"
-done < <(find modules envs -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
+done < <(find bootstrap envs modules vars -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
 ```
 
 ## CI job
