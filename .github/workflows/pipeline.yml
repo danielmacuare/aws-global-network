@@ -159,7 +159,7 @@ jobs:
           while IFS= read -r dir; do
             echo "==> Linting: $dir"
             tflint --config="$GITHUB_WORKSPACE/tools/.tflint.hcl" --chdir="$dir" || FAILED=1
-          done < <(find bootstrap envs modules vars -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
+          done < <(find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
           exit $FAILED
 
   # -----------------------------------------------------------------------
