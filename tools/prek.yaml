@@ -5,14 +5,17 @@ repos:
       - id: terraform_validate
         args:
           - --tf-init-args=-backend=false
+        files: ^(bootstrap|envs|modules)/
       - id: terraform_tflint
         args:
           - --args=--config=__GIT_WORKING_DIR__/tools/.tflint.hcl
+        files: ^(bootstrap|envs|modules)/
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
           - --hook-config=--add-apache-2-license-copyright-header=false
           - --hook-config=--create-file-if-not-exist=true
+        files: ^(bootstrap|envs|modules)/
 
   - repo: https://github.com/bridgecrewio/checkov
     rev: 3.2.434
