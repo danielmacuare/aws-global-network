@@ -18,7 +18,7 @@ Creates a fully-featured VPC with public and private subnets across availability
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 6.31.0 |
 | <a name="provider_awscc"></a> [awscc](#provider\_awscc) | 1.70.0 |
-| <a name="provider_time"></a> [time](#provider\_time) | >= 0.9.0 |
+| <a name="provider_time"></a> [time](#provider\_time) | 0.13.1 |
 
 ## Modules
 
