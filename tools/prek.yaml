@@ -27,7 +27,6 @@ repos:
         args:
           - config
           - --config=tools/trivy.yaml
-          - --quiet
           - .
         types: [terraform]
         pass_filenames: false
