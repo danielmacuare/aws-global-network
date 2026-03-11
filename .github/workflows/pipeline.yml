@@ -20,7 +20,7 @@ jobs:
   # Job 1: Run on PRs — generate cost diff and post a comment
   # -----------------------------------------------------------------------
   infracost:
-    name: Infracost PR Comment
+    name: Infracost - PR Comment
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -110,7 +110,7 @@ jobs:
   # Job 3: Lint Terraform on PRs
   # -----------------------------------------------------------------------
   tflint:
-    name: TFLINT
+    name: Linting - TFLINT
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -142,7 +142,7 @@ jobs:
   # Job 4: Checkov static security analysis on PRs
   # -----------------------------------------------------------------------
   checkov:
-    name: CHECKOV
+    name: Static Code Analysis - CHECKOV
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -165,7 +165,6 @@ jobs:
         run: |
           uv run checkov \
             --config-file tools/.checkov.yaml \
-            --directory . \
             --soft-fail-on LOW,MEDIUM \
             --hard-fail-on HIGH,CRITICAL
 
@@ -173,7 +172,7 @@ jobs:
   # Job 5: Trivy IaC misconfiguration scan on PRs
   # -----------------------------------------------------------------------
   trivy:
-    name: TRIVY
+    name: Security Scan - TRIVY
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -197,7 +196,7 @@ jobs:
   # Job 6: Run on push to main — update the baseline breakdown
   # -----------------------------------------------------------------------
   infracost-baseline:
-    name: Infracost Baseline Update
+    name: Infracost - Baseline Update
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 

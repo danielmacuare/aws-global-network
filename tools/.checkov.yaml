@@ -1,6 +1,11 @@
 framework:
   - terraform
 
+directory:
+  - envs
+  - modules
+  - bootstrap
+
 compact: true
 quiet: true
 
