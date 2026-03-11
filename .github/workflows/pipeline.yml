@@ -15,8 +15,6 @@ env:
   INFRACOST_ENABLE_CLOUD: false
   AWS_DEFAULT_REGION: eu-west-2
   TF_CLI_ARGS_init: "-backend=false"
-  # Allow parallel terraform init to share a plugin cache without "text file busy" errors on Linux
-  TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE: "true"
 
 jobs:
   # -----------------------------------------------------------------------
@@ -127,11 +125,37 @@ jobs:
         with:
           terraform_version: "1.14.4"
 
+      - name: Cache Terraform providers
+        id: cache-providers
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: terraform-providers-${{ runner.os }}-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-providers-${{ runner.os }}-
+
+      # On a cache miss, populate the cache sequentially first.
+      # This avoids the "text file busy" race condition that occurs when multiple
+      # parallel terraform init processes try to write the same provider binary
+      # to a shared cache directory simultaneously.
+      - name: Pre-warm provider cache
+        if: steps.cache-providers.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.terraform.d/plugin-cache"
+          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+          export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true
+          find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
+            while read -r dir; do
+              echo "==> Warming: $dir"
+              terraform -chdir="$dir" init -backend=false -input=false -no-color -quiet
+            done
+
       - name: Run terraform validate across all Terraform directories
         run: |
           set -euo pipefail
           export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
-          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true
           find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
             xargs -P "$(nproc)" -I{} sh -c \
               'echo "==> Validating: {}" && terraform -chdir="{}" init -backend=false -input=false -no-color && terraform -chdir="{}" validate -no-color'
