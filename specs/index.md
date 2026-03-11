@@ -10,10 +10,14 @@
 | [06-deploy-region-eu-west-1.MD](./06-deploy-region-eu-west-1.MD) | Deploy Region eu-west-1 and test inter-region connectivity | Complete — euw1 TGW (ASN 64515), dev cells (cell3000/3001), prod cells (cell2000/2001), TGW-VPC attachments, and TGW peering (euw2↔euw1) fully deployed and verified |
 | [07-bash-to-python.MD](./07-bash-to-python.MD) | Move deploy/destroy scripts from Bash to Python | Complete — `scripts/deploy.py` and `scripts/destroy.py` implemented with Typer CLI, Pydantic config, rich output, TGW peering readiness gate, parallel phase execution via `ThreadPoolExecutor`, and full unit test suite |
 | [08-deploy-usw2-usw1-plan.md](./08-deploy-usw2-usw1-plan.md) | Deploy Regions us-west-2 and us-east-1 | Complete — 4 regions (euw2, euw1, usw2, use1) fully deployed; full-mesh TGW peering (6 attachments); `--parallelism` flag added to deploy/destroy scripts |
-| 09-fix-infracost | Fix Infracost integration | Not started |
-| 10-add-atlantis | Add Atlantis for Terraform automation | Not started |
-| 11-tflint-pipeline | Add tflint to the CI/CD pipeline | Not started |
-| 12-tfdocs-pipeline | Add terraform-docs to the CI/CD pipeline | Not started |
+| [09-connectivity-test-plan.md](./09-connectivity-test-plan.md) | Ping connectivity tests across all 4 regions (prod + dev) | Complete — 32/32 PASS, 0% packet loss; results in [conn-results-summary.md](../docs/dev/connectivity/conn-results-summary.md) |
+| [10-fix-infracost-plan.md](./10-fix-infracost-plan.md) | Fix Infracost integration | Complete |
+| [12-tfdocs-pipeline-plan.md](./12-tfdocs-pipeline-plan.md) | Add terraform-docs to the CI/CD pipeline | Complete |
+| [13-tflint-pipeline-plan.md](./13-tflint-pipeline-plan.md) | Add tflint to the CI/CD pipeline | Complete |
+| [14-checkov-plan.md](./14-checkov-plan.md) | Add Checkov static security analysis to the CI/CD pipeline | Complete |
+| [15-trivy-plan.md](./15-trivy-plan.md) | Add Trivy IaC misconfiguration scanning to the CI/CD pipeline | Complete |
+| [16-uv-python-plan.md](./16-uv-python-plan.md) | Standardise Python dependency management on uv with a virtualenv | Complete |
+| [17-docs.md](./17-docs.md) | Docs reorganisation — consolidate docs/ and specs/ into structured docs/design/ and docs/dev/ hierarchy | Complete |
 
 ## Notes
 
