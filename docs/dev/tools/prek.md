@@ -26,11 +26,23 @@ prek -c tools/prek.yaml install --overwrite
 
 ## Configured Hooks
 
+All hooks are sourced from [`antonbabenko/pre-commit-terraform`](https://github.com/antonbabenko/pre-commit-terraform) v1.105.0, except Checkov which comes from its own repo.
+
+### terraform validate (`terraform_validate`)
+
+Runs `terraform validate` with `-backend=false` across all directories under `bootstrap/`, `envs/`, and `modules/`. Catches syntax errors and invalid references without connecting to the S3 backend.
+
 ### tflint (`terraform_tflint`)
 
-Source: [`antonbabenko/pre-commit-terraform`](https://github.com/antonbabenko/pre-commit-terraform)
+Runs [TFLint](https://github.com/terraform-linters/tflint) against all `.tf` files. Uses the config at `tools/.tflint.hcl` (AWS ruleset, no deep check). Catches misconfigurations, deprecated syntax, and AWS-specific errors that `terraform validate` does not.
 
-Runs [TFLint](https://github.com/terraform-linters/tflint) against all `.tf` and `.tfvars` files on every commit. TFLint catches Terraform misconfigurations, deprecated syntax, and provider-specific errors that `terraform validate` does not.
+### terraform-docs (`terraform_docs`)
+
+Regenerates `README.md` for every module under `modules/` by injecting auto-generated inputs/outputs/requirements between the `<!-- BEGIN_TF_DOCS -->` / `<!-- END_TF_DOCS -->` sentinel comments. If the README changes, prek stages the updated file and the commit proceeds.
+
+### checkov (`checkov`)
+
+Runs [Checkov](https://www.checkov.io/) static security analysis using the config at `tools/.checkov.yaml`. Hard-fails on HIGH/CRITICAL findings; soft-fails on LOW/MEDIUM.
 
 ## Running Hooks Manually
 
@@ -60,7 +72,7 @@ prek -c tools/prek.yaml --last-commit
 
 ## Adding New Tools
 
-To add a new hook (e.g. `terraform-docs`, `tfsec`):
+To add a new hook:
 
 1. Find the hook id in the relevant repository's `.pre-commit-hooks.yaml`.
 2. Add it to `tools/prek.yaml` under the appropriate `repo` block (or add a new `repo` entry).
@@ -69,10 +81,11 @@ To add a new hook (e.g. `terraform-docs`, `tfsec`):
 
 ## Skipping Hooks
 
-To skip all hooks for a single commit:
+To skip a specific hook for a single commit (comma-separate multiple hook IDs):
 
 ```bash
 SKIP=terraform_tflint git commit -m "..."
+SKIP=terraform_validate,checkov git commit -m "..."
 ```
 
 To skip prek entirely:

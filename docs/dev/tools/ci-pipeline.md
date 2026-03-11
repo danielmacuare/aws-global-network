@@ -61,10 +61,12 @@ flowchart TD
         end
 
         subgraph TV[Job 3 · Terraform Validate]
-            TV1[Checkout PR branch] --> TV2[Setup Terraform]
-            TV2 --> TV3[Find all .tf dirs\nin bootstrap / envs / modules]
-            TV3 --> TV4[terraform init -backend=false\nin parallel]
-            TV4 --> TV5[terraform validate\nin parallel]
+            TV1[Checkout PR branch] --> TV2[Setup Terraform 1.14.4]
+            TV2 --> TV3[Restore provider cache\nactions/cache keyed on lock file hashes]
+            TV3 --> TV4{Cache hit?}
+            TV4 -- Miss --> TV5[Pre-warm cache\nsequential terraform init]
+            TV4 -- Hit --> TV6[Parallel terraform init + validate\nxargs -P nproc]
+            TV5 --> TV6
         end
 
         subgraph TL[Job 4 · TFLint]
@@ -119,7 +121,13 @@ See [terraform-docs.md](terraform-docs.md) for configuration details.
 
 ### Job 3 — Terraform Validate
 
-Runs on every pull request. Discovers all directories under `bootstrap/`, `envs/`, and `modules/` that contain `.tf` files (excluding `.terraform/` cache directories), then runs `terraform init -backend=false` and `terraform validate` in parallel across all of them. The `-backend=false` flag prevents any attempt to connect to the S3 state backend.
+Runs on every pull request. Uses a three-step strategy to validate all Terraform directories safely in parallel:
+
+1. **Cache restore** — `actions/cache@v4` restores `~/.terraform.d/plugin-cache` using a key derived from the hash of all `.terraform.lock.hcl` files. A cache hit means all provider binaries are already present.
+2. **Pre-warm (cache miss only)** — On a cache miss, runs `terraform init` sequentially across all directories to populate the shared plugin cache. This avoids the `text file busy` race condition that occurs when multiple parallel processes try to write the same provider binary simultaneously.
+3. **Parallel validate** — With the cache warm, runs `terraform init -backend=false` + `terraform validate` in parallel using `xargs -P $(nproc)`. All init processes only read from the shared cache (no concurrent writes), so there is no race.
+
+`TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true` is set during both init steps. This is required when using a shared plugin cache — without it Terraform refuses to use a cached binary if it suspects the lock file might not reflect what is cached. All lock files in this repo include checksums for both `darwin_arm64` and `linux_amd64`, so the flag is safe to set.
 
 ### Job 4 — TFLint
 

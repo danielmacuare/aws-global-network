@@ -5,7 +5,10 @@ PROJECT_NAME=$HOME/repos/aws-global-network
 
 terraform validate
 terraform fmt --recursive $PROJECT_NAME
-tflint --recursive --config=$PROJECT_NAME/tools/.tflint.hcl
+# tflint does not support --recursive; run per-directory via the helper script:
+uv run --project $PROJECT_NAME/scripts python $PROJECT_NAME/scripts/tf_validate.py
+# or lint a single directory:
+tflint --config=$PROJECT_NAME/tools/.tflint.hcl --chdir=<dir>
 
 ## Code Style Guidelines
 
