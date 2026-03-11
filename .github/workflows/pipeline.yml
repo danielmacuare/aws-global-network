@@ -148,7 +148,7 @@ jobs:
           find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
             while read -r dir; do
               echo "==> Warming: $dir"
-              terraform -chdir="$dir" init -backend=false -input=false -no-color -quiet
+              terraform -chdir="$dir" init -backend=false -input=false -no-color
             done
 
       - name: Run terraform validate across all Terraform directories
