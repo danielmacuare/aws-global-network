@@ -1,7 +1,6 @@
 module "vpc-main" {
   source = "../../../../modules/create-vpc/"
 
-  region       = local.region
   region_short = local.region_short
   environment  = local.environment
   vpc_name     = local.vpc_name
