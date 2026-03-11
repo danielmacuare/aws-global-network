@@ -124,13 +124,11 @@ jobs:
       - name: Run terraform validate across all Terraform directories
         run: |
           set -euo pipefail
-          FAILED=0
-          while IFS= read -r dir; do
-            echo "==> Validating: $dir"
-            terraform -chdir="$dir" init -backend=false -input=false && \
-            terraform -chdir="$dir" validate || FAILED=1
-          done < <(find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
-          exit $FAILED
+          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
+            xargs -P "$(nproc)" -I{} sh -c \
+              'echo "==> Validating: {}" && terraform -chdir="{}" init -backend=false -input=false -no-color && terraform -chdir="{}" validate -no-color'
 
   # -----------------------------------------------------------------------
   # Job 4: Lint Terraform on PRs
@@ -155,12 +153,10 @@ jobs:
       - name: Run tflint across all Terraform directories
         run: |
           set -euo pipefail
-          FAILED=0
-          while IFS= read -r dir; do
-            echo "==> Linting: $dir"
-            tflint --config="$GITHUB_WORKSPACE/tools/.tflint.hcl" --chdir="$dir" || FAILED=1
-          done < <(find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u)
-          exit $FAILED
+          export TFLINT_CONFIG="$GITHUB_WORKSPACE/tools/.tflint.hcl"
+          find bootstrap envs modules -name '*.tf' -not -path '*/.terraform/*' -printf '%h\n' | sort -u | \
+            xargs -P "$(nproc)" -I{} sh -c \
+              'echo "==> Linting: {}" && tflint --config="$TFLINT_CONFIG" --chdir="{}"'
 
   # -----------------------------------------------------------------------
   # Job 5: Checkov static security analysis on PRs
