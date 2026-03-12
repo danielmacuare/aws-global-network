@@ -71,6 +71,7 @@ A full-mesh Transit Gateway network across 4 regions (eu-west-2, eu-west-1, us-w
 - [tf-validate](docs/dev/tools/tf-validate.md) — parallel Terraform validate with timing output
 - [tflint](docs/dev/tools/tflint.md) — Terraform linter
 - [uv](docs/dev/tools/uv.md) — Python dependency management
+- [smoke-test](docs/dev/tools/smoke-test.md) — automated inter-region connectivity smoke tests
 
 ## CI/CD Pipeline
 
