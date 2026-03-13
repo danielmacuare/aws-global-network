@@ -66,6 +66,76 @@ Runs `terraform validate` in parallel across all directories under `bootstrap/`,
 
 ---
 
+## Running Smoke Tests
+
+`scripts/smoke_test.py` automates the full end-to-end connectivity verification across all 16 cells. It requires `instances.json` in the repo root (written automatically by `deploy.py`, or on demand via `--json-only`).
+
+### How It Works
+
+For each cell in each environment the script runs a three-step test:
+
+```
+1. ProxyCommand through bastion  →  ssh -i ssh-keys/<region>-<env>.pem -o ProxyCommand=... ubuntu@<bastion-ip>
+2. SSH to private host           →  ubuntu@<private-ip>
+3. Ping all same-env peers       →  ping -c 4 -W 5 <target-private-ip>  (run in parallel with &)
+```
+
+- **Same-env isolation** — dev cells only ping dev cells; prod cells only ping prod cells.
+- **Parallel pings** — all destination pings fire simultaneously from the private host via bash `&`/`wait`, so a cell with 7 targets takes the time of one ping, not seven.
+- **Parallel source cells** — all source cells within an environment are tested concurrently via `ThreadPoolExecutor`, so the full suite runs in roughly the time of the slowest single cell test.
+- **RTT capture** — ping output is written to `/tmp/smoke_<cell>` temp files; average RTT is extracted and shown in the results table.
+- **Rich table output** — results grouped by ENV with Source, Destination, Status (colour-coded), Latency, and Duration columns.
+
+### Quick Start
+
+```bash
+# Run all tests (reads instances.json from repo root)
+python scripts/smoke_test.py
+
+# Dry-run — print what would be tested without SSHing
+python scripts/smoke_test.py --dry-run
+
+# Filter to specific regions
+python scripts/smoke_test.py --regions euw1,euw2
+
+# Stop on first failure
+python scripts/smoke_test.py --fail-fast
+
+# Debug mode — print full SSH command and ping targets for each cell
+python scripts/smoke_test.py --debug
+```
+
+### All Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--instances PATH` | `instances.json` | Path to the instances inventory file |
+| `--key-dir DIR` | `ssh-keys/` | Directory containing `<region>-<env>.pem` key files |
+| `--timeout SECONDS` | `180` | Per-cell SSH+ping timeout (covers the entire session) |
+| `--regions r1,r2,...` | all | Comma-separated region short-names to filter tests |
+| `--dry-run` | off | Print test plan without running SSH |
+| `--debug` | off | Print SSH command and per-destination ping targets |
+| `--fail-fast` | off | Stop all remaining tests on first FAIL or ERROR |
+
+### Prerequisites
+
+- `instances.json` must exist in the repo root. Deploy creates it automatically; to refresh stale IPs:
+  ```bash
+  python scripts/deploy.py --json-refresh
+  ```
+- SSH key files must be present at `ssh-keys/<region>-<env>.pem` with `chmod 400`.
+- Your local SSH agent must **not** have other keys loaded that would cause `MaxAuthTries` failures — the script uses `IdentitiesOnly=yes` to use only the specified key.
+
+### Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | All tests passed (or `--dry-run`) |
+| `1` | One or more tests failed or errored |
+| `2` | Configuration error (missing `instances.json`, no cells found, etc.) |
+
+---
+
 ## Running Destroy
 
 ```bash

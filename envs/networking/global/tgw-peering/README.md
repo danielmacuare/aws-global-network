@@ -13,10 +13,10 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.35.1 |
-| <a name="provider_aws.euw1"></a> [aws.euw1](#provider\_aws.euw1) | 6.35.1 |
-| <a name="provider_aws.use1"></a> [aws.use1](#provider\_aws.use1) | 6.35.1 |
-| <a name="provider_aws.usw2"></a> [aws.usw2](#provider\_aws.usw2) | 6.35.1 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.36.0 |
+| <a name="provider_aws.euw1"></a> [aws.euw1](#provider\_aws.euw1) | 6.36.0 |
+| <a name="provider_aws.use1"></a> [aws.use1](#provider\_aws.use1) | 6.36.0 |
+| <a name="provider_aws.usw2"></a> [aws.usw2](#provider\_aws.usw2) | 6.36.0 |
 | <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 | <a name="provider_time"></a> [time](#provider\_time) | 0.13.1 |
 
