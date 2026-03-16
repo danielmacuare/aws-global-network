@@ -248,7 +248,7 @@ def main(
             "--json",
             help="Write instances.json to repo root after deploy",
         ),
-    ] = False,
+    ] = True,
     json_only: Annotated[
         bool,
         typer.Option(

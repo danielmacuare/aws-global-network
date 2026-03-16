@@ -1,7 +1,7 @@
 # Public Security Group (Bastion)
 resource "aws_security_group" "bastion" {
   name_prefix = "bastion-"
-  description = "Bastion host security group — SSH and ICMP inbound, all outbound"
+  description = "Bastion host security group - SSH and ICMP inbound, all outbound"
   vpc_id      = var.vpc_id
 
   # Only SSH on port 22 inbound allowed to bastions hosts (from everywhere)
@@ -49,7 +49,7 @@ resource "aws_security_group" "bastion" {
 # Private Security Group (Private EC2)
 resource "aws_security_group" "private" {
   name_prefix = "private-"
-  description = "Private EC2 security group — inbound from bastion and TGW supernets, all outbound"
+  description = "Private EC2 security group - inbound from bastion and TGW supernets, all outbound"
   vpc_id      = var.vpc_id
 
   # From bastions to private ec2 or subnets all allowed
