@@ -66,6 +66,78 @@ Runs `terraform validate` in parallel across all directories under `bootstrap/`,
 
 ---
 
+## Updating Lock Files
+
+`scripts/lock-files.py` regenerates every `.terraform.lock.hcl` in the repo so that it includes provider checksums for all target platforms. Run this whenever providers are upgraded or when CI fails with a checksum mismatch on a platform you didn't initialise locally (e.g. adding Linux hashes after working only on macOS).
+
+### Why this is needed
+
+`terraform init` only records checksums for the platform it runs on. When the same lock file is used on a different OS (e.g. a macOS developer pushing a lock file that CI validates on Ubuntu), Terraform refuses to install providers from its shared cache because the Linux `h1:` hash is absent. `terraform providers lock` solves this by querying the Terraform registry for every requested platform and writing all checksums into the lock file in one shot — without downloading the full provider binary for every platform.
+
+### Quick Start
+
+```bash
+# Regenerate all lock files for the default 5 platforms
+uv run --project scripts/ python scripts/lock-files.py
+
+# Or with the venv already activated
+python scripts/lock-files.py
+```
+
+### All Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--parallelism` / `-p` | CPU count | Number of directories processed concurrently |
+| `--platform` | see below | Target platform; repeat the flag to add more |
+
+**Default platforms:**
+
+| Platform | Covers |
+|---|---|
+| `linux_amd64` | CI runners, most cloud servers |
+| `linux_arm64` | Graviton / ARM cloud servers |
+| `darwin_amd64` | Intel Macs |
+| `darwin_arm64` | Apple Silicon Macs |
+| `windows_amd64` | Windows workstations |
+
+### Examples
+
+```bash
+# Minimal — only the two platforms you actually use
+uv run --project scripts/ python scripts/lock-files.py \
+  --platform linux_amd64 \
+  --platform darwin_arm64
+
+# Limit concurrency on a slow connection (registry downloads per platform)
+uv run --project scripts/ python scripts/lock-files.py --parallelism 4
+
+# Show help
+uv run --project scripts/ python scripts/lock-files.py --help
+```
+
+### How It Works
+
+1. **Discovery** — scans `bootstrap/`, `envs/`, and `modules/` for directories containing `.tf` files (skipping `.terraform/` cache dirs).
+2. **Parallel execution** — runs `terraform providers lock -platform <p1> -platform <p2> ...` concurrently across all discovered directories using a `ThreadPoolExecutor` (default workers = CPU count).
+3. **Results table** — prints a Rich table sorted failures-first, showing directory, pass/fail, and duration per entry. Full error output for any failure is printed below the table.
+4. **Exit code** — exits `0` if all directories succeed, `1` if any fail.
+
+### When to Run
+
+- After bumping a provider version in any `versions.tf` / `required_providers` block.
+- After a CI failure with the message: *"the provider cache has a copy of X that doesn't match any of the checksums recorded in the dependency lock file"*.
+- When onboarding a new platform (e.g. adding Windows support).
+
+### Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | All lock files updated successfully |
+| `1` | One or more directories failed |
+
+---
+
 ## Running Smoke Tests
 
 `scripts/smoke_test.py` automates the full end-to-end connectivity verification across all 16 cells. It requires `instances.json` in the repo root (written automatically by `deploy.py`, or on demand via `--json-only`).
