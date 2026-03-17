@@ -27,10 +27,10 @@ This branch introduces a `smoke_test.py` script that verifies cross-region netwo
 ## Commit Merge Message
 
 ```
-Merge [PR#?] - feat: Add smoke tests and lock-file update scripts
+Merge [PR#18] - feat: Add smoke tests and lock-file update scripts
 
 - From branch: feature/more-tweaks
-- Resolves: PR#?
+- Resolves: PR#18
 - Description:
   - Add smoke_test.py for automated inter-region connectivity verification via ProxyJump SSH with parallel execution
   - Add lock-files.py to regenerate Terraform lock files for all platforms in parallel
